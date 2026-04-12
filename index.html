@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Axon — Route AI workloads to any edge. Python-first.</title>
-  <meta name="description" content="The Python SDK for edge AI workload routing. Deploy inference to decentralised GPU, TEE nodes, and major cloud providers — automatically routed to the fastest, cheapest option. One interface. Zero lock-in." />
+  <meta name="description" content="The Python SDK for edge AI workload routing. Deploy inference to GPU clusters, TEE nodes, and major cloud providers — automatically routed to the fastest, cheapest option. One interface. Zero lock-in." />
   <meta property="og:title" content="Axon Python SDK — Route AI to the edge" />
   <meta property="og:description" content="pip install axon and your AI workloads route across io.net, Akash, AWS, Cloudflare and more. OpenAI-compatible. Async-native. Provider-agnostic." />
   <meta property="og:url" content="https://axon.dev" />
@@ -321,7 +321,7 @@
 <section class="hero">
   <div class="badge">Open Source · v0.1.0 · Python 3.11+ · 10 Providers · Async-native</div>
   <h1>Route AI workloads<br/>to <em>any edge.</em></h1>
-  <p>Deploy inference to decentralised GPU, TEE nodes, and major cloud providers — all through one async Python interface. No lock-in. No rewriting.</p>
+  <p>Deploy inference to GPU clusters, TEE nodes, and major cloud providers — all through one async Python interface. No lock-in. No rewriting.</p>
   <p style="font-size:0.9rem;color:var(--muted);margin-top:0.75rem;max-width:520px;margin-left:auto;margin-right:auto;">Axon is to edge compute what <code style="color:var(--accent)">httpx</code> is to HTTP — one client, any backend.</p>
   <div class="hero-ctas">
     <a class="btn-primary" href="#quickstart">Get started →</a>
@@ -477,16 +477,16 @@ response = <span class="kw">await</span> client.chat.completions.<span class="fn
   <div class="section-inner">
     <div class="section-label">Providers</div>
     <h2 class="section-title">One interface, any network</h2>
-    <p class="section-sub">Deploy to decentralised GPU nodes or major cloud platforms without changing your code. Axon routes to the fastest, cheapest available option.</p>
+    <p class="section-sub">Deploy to GPU clusters or major cloud platforms without changing your code. Axon routes to the fastest, cheapest available option.</p>
 
-    <p style="font-weight:600;font-size:.85rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:1rem;">Edge &amp; Decentralised</p>
+    <p style="font-weight:600;font-size:.85rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:1rem;">Edge &amp; Private compute</p>
     <div class="provider-grid" style="margin-bottom:2.75rem;">
       <div class="provider-card">
         <div class="provider-header">
           <div class="provider-name">io.net</div>
           <div class="provider-badge">GPU · Live</div>
         </div>
-        <div class="provider-desc">Decentralised GPU clusters — A100, H100, RTX 4090 spot compute at a fraction of cloud pricing. Best for large model inference and training jobs.</div>
+        <div class="provider-desc">GPU clusters — A100, H100, RTX 4090 spot compute at a fraction of cloud pricing. Best for large model inference and training jobs.</div>
         <div class="provider-meta">
           <span>🖥️ GPU clusters</span>
           <span>🔑 API key</span>
@@ -498,7 +498,7 @@ response = <span class="kw">await</span> client.chat.completions.<span class="fn
           <div class="provider-name">Akash</div>
           <div class="provider-badge">Live</div>
         </div>
-        <div class="provider-desc">Decentralised cloud marketplace where providers bid to run containerised workloads. Deploy bundles via IPFS, pay in AKT — no vendor overhead.</div>
+        <div class="provider-desc">Open cloud marketplace where providers bid to run containerised workloads. Pay per use with no lock-in and no vendor overhead.</div>
         <div class="provider-meta">
           <span>☁️ Docker containers</span>
           <span>🔑 BIP-39 mnemonic</span>
@@ -522,7 +522,7 @@ response = <span class="kw">await</span> client.chat.completions.<span class="fn
           <div class="provider-name">Fluence</div>
           <div class="provider-badge">Live</div>
         </div>
-        <div class="provider-desc">Decentralised serverless cloud built on libp2p. Deploy spells to a permissionless P2P network via the Aqua scripting language.</div>
+        <div class="provider-desc">Serverless compute built on a peer-to-peer network. Deploy functions globally with no cold starts and no central point of failure.</div>
         <div class="provider-meta">
           <span>🌐 P2P relay</span>
           <span>🔑 Ed25519 key</span>
@@ -635,7 +635,7 @@ response = <span class="kw">await</span> client.chat.completions.<span class="fn
           <div class="step-num">3</div>
           <div class="step-content">
             <h4>Deploy your workload</h4>
-            <p>Point Axon at your Python or Node.js entry point. It handles bundling, IPFS upload, and registration automatically.</p>
+            <p>Point Axon at your Python or Node.js entry point. It handles bundling, upload, and registration automatically.</p>
           </div>
         </div>
         <div class="step">

@@ -4,12 +4,12 @@ build-backend = "hatchling.build"
 
 [project]
 name = "axon"
-version = "0.1.1"
+version = "0.1.2"
 description = "Provider-agnostic edge compute SDK for AI workload routing"
 readme = "README.md"
 license = { text = "Apache-2.0" }
 requires-python = ">=3.11"
-keywords = ["edge-compute", "ai", "routing", "inference", "depin", "akash", "ionet"]
+keywords = ["edge-compute", "ai", "routing", "inference", "llm", "openai", "gpu", "multi-provider", "akash", "ionet"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
