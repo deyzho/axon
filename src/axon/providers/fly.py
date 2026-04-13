@@ -15,6 +15,7 @@ from typing import Any, Callable
 import httpx
 
 from axon.exceptions import AuthError, DeploymentError, ProviderError
+from axon.pricing import get_pricing
 from axon.providers.base import IAxonProvider
 from axon.types import (
     CostEstimate,
@@ -27,13 +28,10 @@ from axon.types import (
 
 _FLY_API = "https://api.machines.dev/v1"
 
-# Fly.io Machine pricing (USD/hour) for shared CPU
-_PRICING = {
-    "shared-cpu-1x": 0.0101,
-    "shared-cpu-2x": 0.0202,
+# Fly.io Machine pricing for larger/performance sizes (USD/hour) — not in live pricing
+_PRICING_STATIC = {
     "performance-1x": 0.0625,
     "performance-2x": 0.1250,
-    "default": 0.0101,
 }
 
 
@@ -293,7 +291,13 @@ class FlyProvider(IAxonProvider):
 
     async def estimate(self, config: DeploymentConfig) -> CostEstimate:
         vm_size = config.metadata.get("vm_size", "shared-cpu-1x")
-        hourly = _PRICING.get(vm_size, _PRICING["default"])
+        pricing = await get_pricing()
+        if vm_size == "shared-cpu-2x":
+            hourly = pricing.fly_shared_cpu_2x_hour
+        elif vm_size in _PRICING_STATIC:
+            hourly = _PRICING_STATIC[vm_size]
+        else:
+            hourly = pricing.fly_shared_cpu_1x_hour
         duration_h = config.timeout_ms / 3_600_000
         total = hourly * duration_h * config.replicas
         return CostEstimate(

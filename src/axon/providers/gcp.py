@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from axon.exceptions import AuthError, DeploymentError, ProviderError
+from axon.pricing import get_pricing
 from axon.providers.base import IAxonProvider
 from axon.types import (
     CostEstimate,
@@ -22,10 +23,6 @@ from axon.types import (
     Message,
     ProviderHealth,
 )
-
-# Cloud Run pricing (USD/vCPU-second and GB-second)
-_RUN_VCPU_SEC = 0.00002400
-_RUN_MEM_GB_SEC = 0.00000250
 
 
 class GCPProvider(IAxonProvider):
@@ -395,7 +392,8 @@ class GCPProvider(IAxonProvider):
         duration_s = config.timeout_ms / 1000
         vcpu = float(config.metadata.get("cpu", 1))
         mem_gb = config.memory_mb / 1024
-        compute = (_RUN_VCPU_SEC * vcpu + _RUN_MEM_GB_SEC * mem_gb) * duration_s * config.replicas
+        pricing = await get_pricing()
+        compute = (pricing.gcp_run_vcpu_sec * vcpu + pricing.gcp_run_gib_sec * mem_gb) * duration_s * config.replicas
         return CostEstimate(
             provider="gcp",
             token="USD",

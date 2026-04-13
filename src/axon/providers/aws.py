@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from axon.exceptions import AuthError, DeploymentError, ProviderError
+from axon.pricing import get_pricing
 from axon.providers.base import IAxonProvider
 from axon.types import (
     CostEstimate,
@@ -22,10 +23,6 @@ from axon.types import (
     Message,
     ProviderHealth,
 )
-
-# Lambda pricing (USD per 1M requests + GB-second)
-_LAMBDA_PRICE_PER_REQUEST = 0.0000002
-_LAMBDA_PRICE_PER_GB_SEC = 0.0000166667
 
 
 class AWSProvider(IAxonProvider):
@@ -378,10 +375,11 @@ class AWSProvider(IAxonProvider):
     async def estimate(self, config: DeploymentConfig) -> CostEstimate:
         duration_s = config.timeout_ms / 1000
         memory_gb = config.memory_mb / 1024
+        pricing = await get_pricing()
+        compute = pricing.aws_lambda_gb_sec * memory_gb * duration_s * config.replicas
+        req = pricing.aws_lambda_request * config.replicas
+        total = compute + req
         gb_seconds = duration_s * memory_gb * config.replicas
-        compute_cost = gb_seconds * _LAMBDA_PRICE_PER_GB_SEC
-        request_cost = config.replicas * _LAMBDA_PRICE_PER_REQUEST
-        total = compute_cost + request_cost
         return CostEstimate(
             provider="aws",
             token="USD",
@@ -390,8 +388,8 @@ class AWSProvider(IAxonProvider):
             per_hour=False,
             breakdown={
                 "compute_gb_seconds": gb_seconds,
-                "compute_cost": compute_cost,
-                "request_cost": request_cost,
+                "compute_cost": compute,
+                "request_cost": req,
             },
         )
 

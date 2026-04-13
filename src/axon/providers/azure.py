@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from axon.exceptions import AuthError, DeploymentError, ProviderError
+from axon.pricing import get_pricing
 from axon.providers.base import IAxonProvider
 from axon.types import (
     CostEstimate,
@@ -22,10 +23,6 @@ from axon.types import (
     Message,
     ProviderHealth,
 )
-
-# ACI pricing (USD/vCPU-second and GB-second)
-_ACI_VCPU_SEC = 0.0000135
-_ACI_MEM_GB_SEC = 0.0000015
 
 
 class AzureProvider(IAxonProvider):
@@ -336,7 +333,8 @@ class AzureProvider(IAxonProvider):
         duration_s = config.timeout_ms / 1000
         vcpu = float(config.metadata.get("cpu", 1.0))
         mem_gb = config.memory_mb / 1024
-        cost = (_ACI_VCPU_SEC * vcpu + _ACI_MEM_GB_SEC * mem_gb) * duration_s * config.replicas
+        pricing = await get_pricing()
+        cost = (pricing.azure_aci_vcpu_sec * vcpu + pricing.azure_aci_gib_sec * mem_gb) * duration_s * config.replicas
         return CostEstimate(
             provider="azure",
             token="USD",

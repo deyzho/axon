@@ -15,6 +15,7 @@ from typing import Any, Callable
 import httpx
 
 from axon.exceptions import AuthError, DeploymentError, ProviderError
+from axon.pricing import get_pricing
 from axon.providers.base import IAxonProvider
 from axon.types import (
     CostEstimate,
@@ -26,10 +27,6 @@ from axon.types import (
 )
 
 _CF_API = "https://api.cloudflare.com/client/v4"
-
-# Cloudflare Workers pricing
-# Free: 100k req/day; Paid: $0.30/million after first 10M
-_PRICE_PER_MILLION_REQ = 0.30
 
 
 class CloudflareProvider(IAxonProvider):
@@ -264,16 +261,17 @@ class CloudflareProvider(IAxonProvider):
             return ProviderHealth(provider="cloudflare", status=HealthStatus.UNHEALTHY, error=str(exc))
 
     async def estimate(self, config: DeploymentConfig) -> CostEstimate:
-        # Workers Paid: $5/month + $0.30/million requests after first 10M
+        # Workers Paid: $5/month + $0.50/million requests after first 10M
         # Approximate for a single invocation
-        est = config.replicas * _PRICE_PER_MILLION_REQ / 1_000_000
+        pricing = await get_pricing()
+        est = config.replicas * pricing.cf_worker_request
         return CostEstimate(
             provider="cloudflare",
             token="USD",
             amount=est,
             usd_estimate=est,
             per_hour=False,
-            breakdown={"price_per_million": _PRICE_PER_MILLION_REQ, "requests": float(config.replicas)},
+            breakdown={"price_per_request": pricing.cf_worker_request, "requests": float(config.replicas)},
         )
 
 

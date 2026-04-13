@@ -51,7 +51,7 @@ class AkashProvider(IAxonProvider):
     """
 
     def __init__(self) -> None:
-        self._mnemonic: str | None = None
+        self._mnemonic_buf: bytearray = bytearray()
         self._node: str = "https://rpc.akashnet.net:443"
         self._chain_id: str = "akashnet-2"
         self._key_name: str = "axon"
@@ -59,6 +59,10 @@ class AkashProvider(IAxonProvider):
         # Maps dseq → lease endpoint
         self._endpoints: dict[str, str] = {}
         self._message_handlers: list[Callable[[Message], None]] = []
+
+    @property
+    def _mnemonic(self) -> str:
+        return self._mnemonic_buf.decode('utf-8') if self._mnemonic_buf else ''
 
     @property
     def name(self) -> str:
@@ -83,7 +87,7 @@ class AkashProvider(IAxonProvider):
             raise AuthError(
                 f"Akash mnemonic must be 12 or 24 words, got {len(words)}."
             )
-        self._mnemonic = mnemonic
+        self._mnemonic_buf = bytearray(mnemonic.encode('utf-8'))
         self._node = os.environ.get("AKASH_NODE", self._node)
         self._chain_id = os.environ.get("AKASH_CHAIN_ID", self._chain_id)
         self._key_name = os.environ.get("AKASH_KEY_NAME", self._key_name)
@@ -94,6 +98,10 @@ class AkashProvider(IAxonProvider):
         self._connected = True
 
     async def disconnect(self) -> None:
+        # Zero out mnemonic bytes before GC — bytearray is mutable
+        for i in range(len(self._mnemonic_buf)):
+            self._mnemonic_buf[i] = 0
+        self._mnemonic_buf = bytearray()
         self._connected = False
 
     # ------------------------------------------------------------------
@@ -133,14 +141,19 @@ class AkashProvider(IAxonProvider):
                 sdl_path = sdl_file.name
 
             try:
-                output = _run_cli(
-                    [
-                        "provider-services", "tx", "deployment", "create", sdl_path,
-                        "--fees", "5000uakt",
-                        "--yes",
-                    ],
-                    env=self._cli_env(),
-                )
+                cli_env = self._cli_env()
+                try:
+                    output = _run_cli(
+                        [
+                            "provider-services", "tx", "deployment", "create", sdl_path,
+                            "--fees", "5000uakt",
+                            "--yes",
+                        ],
+                        env=cli_env,
+                    )
+                finally:
+                    if "AKASH_MNEMONIC" in cli_env:
+                        cli_env["AKASH_MNEMONIC"] = "\x00" * len(cli_env["AKASH_MNEMONIC"])
                 dseq, endpoint = _parse_akash_output(output)
                 self._endpoints[dseq] = endpoint
 
@@ -251,17 +264,25 @@ class AkashProvider(IAxonProvider):
                   count: {config.replicas}
         """)
 
+    def _build_cli_env(self, extra: dict[str, str]) -> dict[str, str]:
+        """Build a minimal env for CLI subprocesses — don't inherit all parent env vars."""
+        inherited_keys = {'PATH', 'HOME', 'USER', 'USERPROFILE', 'TERM', 'LANG',
+                          'TMP', 'TEMP', 'TMPDIR', 'XDG_CONFIG_HOME', 'XDG_DATA_HOME',
+                          'LOCALAPPDATA', 'APPDATA'}
+        env = {k: v for k, v in os.environ.items() if k in inherited_keys}
+        env.update(extra)
+        return env
+
     def _cli_env(self) -> dict[str, str]:
         """Build environment for provider-services CLI invocations."""
-        return {
-            **os.environ,
-            "AKASH_MNEMONIC": self._mnemonic or "",
+        return self._build_cli_env({
+            "AKASH_MNEMONIC": self._mnemonic,
             "AKASH_NODE": self._node,
             "AKASH_CHAIN_ID": self._chain_id,
             "AKASH_KEYRING_BACKEND": "test",
             "AKASH_FROM": self._key_name,
             "AKASH_YES": "1",
-        }
+        })
 
     # ------------------------------------------------------------------
     # Send / receive
@@ -315,10 +336,15 @@ class AkashProvider(IAxonProvider):
         if not self._connected:
             raise ProviderError("akash", "Not connected.")
         try:
-            output = _run_cli(
-                ["provider-services", "query", "deployment", "list", "--owner", "self"],
-                env=self._cli_env(),
-            )
+            cli_env = self._cli_env()
+            try:
+                output = _run_cli(
+                    ["provider-services", "query", "deployment", "list", "--owner", "self"],
+                    env=cli_env,
+                )
+            finally:
+                if "AKASH_MNEMONIC" in cli_env:
+                    cli_env["AKASH_MNEMONIC"] = "\x00" * len(cli_env["AKASH_MNEMONIC"])
             data = json.loads(output)
             deployments = []
             for dep in data.get("deployments", []):

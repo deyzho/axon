@@ -54,12 +54,16 @@ class AcurastProvider(IAxonProvider):
 
     def __init__(self) -> None:
         self._secret_key: str | None = None
-        self._mnemonic: str | None = None
+        self._mnemonic_buf: bytearray = bytearray()
         self._ws_url: str = self.DEFAULT_WS_URL
         self._ws: Any | None = None                 # websockets.WebSocketClientProtocol
         self._connected: bool = False
         self._listen_task: asyncio.Task | None = None  # type: ignore[type-arg]
         self._message_handlers: list[Callable[[Message], None]] = []
+
+    @property
+    def _mnemonic(self) -> str:
+        return self._mnemonic_buf.decode('utf-8') if self._mnemonic_buf else ''
 
     @property
     def name(self) -> str:
@@ -89,7 +93,7 @@ class AcurastProvider(IAxonProvider):
             )
 
         self._secret_key = key.replace("0x", "")
-        self._mnemonic = mnemonic
+        self._mnemonic_buf = bytearray(mnemonic.encode('utf-8'))
         self._ws_url = os.environ.get("ACURAST_WS_URL", self.DEFAULT_WS_URL)
 
         # Connect via websockets library
@@ -121,6 +125,10 @@ class AcurastProvider(IAxonProvider):
         if self._ws:
             await self._ws.close()
             self._ws = None
+        # Zero out mnemonic bytes before GC — bytearray is mutable
+        for i in range(len(self._mnemonic_buf)):
+            self._mnemonic_buf[i] = 0
+        self._mnemonic_buf = bytearray()
         self._connected = False
 
     # ------------------------------------------------------------------
@@ -166,7 +174,12 @@ class AcurastProvider(IAxonProvider):
             if destinations:
                 cmd += ["--destination", destinations]
 
-            output = _run_cli(cmd, env={**os.environ, "ACURAST_MNEMONIC": self._mnemonic or ""})
+            cli_env = self._build_cli_env({"ACURAST_MNEMONIC": self._mnemonic})
+            try:
+                output = _run_cli(cmd, env=cli_env)
+            finally:
+                if "ACURAST_MNEMONIC" in cli_env:
+                    cli_env["ACURAST_MNEMONIC"] = "\x00" * len(cli_env["ACURAST_MNEMONIC"])
             deployment_id, processor_ids = _parse_acurast_output(output)
 
             return Deployment(
@@ -189,6 +202,15 @@ class AcurastProvider(IAxonProvider):
             ) from exc
         finally:
             bundle_path.unlink(missing_ok=True)
+
+    def _build_cli_env(self, extra: dict[str, str]) -> dict[str, str]:
+        """Build a minimal env for CLI subprocesses — don't inherit all parent env vars."""
+        inherited_keys = {'PATH', 'HOME', 'USER', 'USERPROFILE', 'TERM', 'LANG',
+                          'TMP', 'TEMP', 'TMPDIR', 'XDG_CONFIG_HOME', 'XDG_DATA_HOME',
+                          'LOCALAPPDATA', 'APPDATA'}
+        env = {k: v for k, v in os.environ.items() if k in inherited_keys}
+        env.update(extra)
+        return env
 
     def _bundle(self, config: DeploymentConfig) -> Path:
         """Bundle entry point with TEE runtime bootstrap and safe env injection."""
@@ -293,10 +315,15 @@ class AcurastProvider(IAxonProvider):
         if not self._connected:
             raise ProviderError("acurast", "Not connected.")
         try:
-            output = _run_cli(
-                ["acurast", "deployments", "--format", "json"],
-                env={**os.environ, "ACURAST_MNEMONIC": self._mnemonic or ""},
-            )
+            cli_env = self._build_cli_env({"ACURAST_MNEMONIC": self._mnemonic})
+            try:
+                output = _run_cli(
+                    ["acurast", "deployments", "--format", "json"],
+                    env=cli_env,
+                )
+            finally:
+                if "ACURAST_MNEMONIC" in cli_env:
+                    cli_env["ACURAST_MNEMONIC"] = "\x00" * len(cli_env["ACURAST_MNEMONIC"])
             items = json.loads(output)
             return [
                 Deployment(
