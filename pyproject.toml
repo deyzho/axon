@@ -69,8 +69,8 @@ axon = "axon.cli.main:app"
 
 [project.urls]
 Homepage = "https://axon.dev"
-Repository = "https://github.com/deyzho/axonsdk"
-Issues = "https://github.com/deyzho/axonsdk/issues"
+Repository = "https://github.com/deyzho/axon"
+Issues = "https://github.com/deyzho/axon/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/axon"]
@@ -89,3 +89,4 @@ select = ["E", "F", "I", "UP"]
 [tool.mypy]
 python_version = "3.11"
 strict = true
+ignore_missing_imports = true
