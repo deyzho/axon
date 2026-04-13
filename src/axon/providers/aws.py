@@ -22,6 +22,7 @@ from axon.types import (
     HealthStatus,
     Message,
     ProviderHealth,
+    ProviderName,
 )
 
 
@@ -51,7 +52,7 @@ class AWSProvider(IAxonProvider):
         self._message_handlers: list[Callable[[Message], None]] = []
 
     @property
-    def name(self) -> str:
+    def name(self) -> ProviderName:
         return "aws"
 
     # ------------------------------------------------------------------
@@ -64,7 +65,7 @@ class AWSProvider(IAxonProvider):
         or any other credential chain boto3 supports (instance profile, SSO, etc.).
         """
         try:
-            import boto3  # type: ignore[import-untyped]
+            import boto3
         except ImportError as exc:
             raise ProviderError(
                 "aws",
@@ -139,6 +140,7 @@ class AWSProvider(IAxonProvider):
         )
 
         try:
+            assert self._boto_session is not None
             lambda_client = self._boto_session.client("lambda", region_name=self._region)
 
             runtime_map = {"nodejs": "nodejs20.x", "python": "python3.11", "docker": "python3.11"}
@@ -147,7 +149,7 @@ class AWSProvider(IAxonProvider):
 
             zip_bytes = zip_path.read_bytes()
 
-            def _create_or_update() -> dict[str, Any]:
+            def _create_or_update() -> Any:
                 try:
                     resp = lambda_client.create_function(
                         FunctionName=function_name,
@@ -174,7 +176,7 @@ class AWSProvider(IAxonProvider):
             function_arn: str = data.get("FunctionArn", "")
 
             # Create/retrieve function URL for HTTP invoke
-            def _get_or_create_url() -> str:
+            def _get_or_create_url() -> Any:
                 try:
                     url_resp = lambda_client.get_function_url_config(FunctionName=function_name)
                     return url_resp["FunctionUrl"]
@@ -230,9 +232,10 @@ class AWSProvider(IAxonProvider):
 
         task_name = _sanitise_name(config.name)
 
+        assert self._boto_session is not None
         ecs = self._boto_session.client("ecs", region_name=self._region)
 
-        def _register_task() -> str:
+        def _register_task() -> Any:
             resp = ecs.register_task_definition(
                 family=task_name,
                 networkMode="awsvpc",
@@ -254,7 +257,7 @@ class AWSProvider(IAxonProvider):
 
         task_arn = await asyncio.get_event_loop().run_in_executor(None, _register_task)
 
-        def _run_task() -> dict[str, Any]:
+        def _run_task() -> Any:
             subnet_ids: list[str] = config.metadata.get("subnet_ids", [])
             sg_ids: list[str] = config.metadata.get("security_group_ids", [])
             return ecs.run_task(
@@ -355,6 +358,19 @@ class AWSProvider(IAxonProvider):
             )
             for fn in functions
         ]
+
+    async def teardown(self, deployment_id: str) -> None:
+        """Delete a Lambda function."""
+        if not self._connected or not self._boto_session:
+            return
+        try:
+            lambda_client = self._boto_session.client("lambda", region_name=self._region)
+            await asyncio.get_event_loop().run_in_executor(
+                None,
+                lambda: lambda_client.delete_function(FunctionName=deployment_id),
+            )
+        except Exception:
+            pass  # Best effort — ignore if already deleted
 
     async def health(self) -> ProviderHealth:
         """Probe Lambda service endpoint for the configured region."""

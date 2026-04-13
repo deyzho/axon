@@ -192,6 +192,41 @@ def send(
 
 
 @app.command()
+def teardown(
+    deployment_id: str = typer.Argument(..., help="Deployment ID to remove"),
+    cwd: Optional[str] = typer.Option(None, "--cwd", help="Project directory"),
+) -> None:
+    """Delete a deployment from the provider."""
+    from axon.client import AxonClient
+    from axon.config import load_config
+
+    project_dir = Path(cwd) if cwd else Path.cwd()
+
+    try:
+        config = load_config(project_dir)
+    except Exception as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(1)
+
+    secret_key = os.environ.get("AXON_SECRET_KEY")
+    if not secret_key:
+        console.print("[red]Error:[/red] AXON_SECRET_KEY not set.")
+        raise typer.Exit(1)
+
+    async def _run() -> None:
+        async with AxonClient(provider=config.provider, secret_key=secret_key) as client:
+            with console.status(f"Removing [cyan]{deployment_id}[/cyan] from [cyan]{config.provider}[/cyan]..."):
+                await client.teardown(deployment_id)
+            console.print(f"[green]✓[/green] Deployment [cyan]{deployment_id}[/cyan] removed.")
+
+    try:
+        asyncio.run(_run())
+    except Exception as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(1)
+
+
+@app.command()
 def auth(
     provider: str = typer.Argument(..., help="Provider to authenticate (ionet, akash, acurast, fluence, koii)"),
 ) -> None:

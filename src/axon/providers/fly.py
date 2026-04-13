@@ -24,6 +24,7 @@ from axon.types import (
     HealthStatus,
     Message,
     ProviderHealth,
+    ProviderName,
 )
 
 _FLY_API = "https://api.machines.dev/v1"
@@ -63,7 +64,7 @@ class FlyProvider(IAxonProvider):
         self._message_handlers: list[Callable[[Message], None]] = []
 
     @property
-    def name(self) -> str:
+    def name(self) -> ProviderName:
         return "fly"
 
     # ------------------------------------------------------------------
@@ -276,6 +277,28 @@ class FlyProvider(IAxonProvider):
             )
             for m in machines
         ]
+
+    async def teardown(self, deployment_id: str) -> None:
+        """Stop and delete a Fly.io Machine."""
+        if not self._connected:
+            return
+        try:
+            headers = {"Authorization": f"Bearer {self._api_token}", "Content-Type": "application/json"}
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                # Stop first (ignore errors — might already be stopped)
+                await client.post(
+                    f"https://api.machines.dev/v1/apps/{self._app_name}/machines/{deployment_id}/stop",
+                    headers=headers,
+                )
+                # Then delete
+                resp = await client.delete(
+                    f"https://api.machines.dev/v1/apps/{self._app_name}/machines/{deployment_id}?force=true",
+                    headers=headers,
+                )
+                if resp.status_code not in (200, 404):
+                    resp.raise_for_status()
+        except Exception:
+            pass  # Best effort
 
     async def health(self) -> ProviderHealth:
         """Check Fly.io Machines API reachability."""

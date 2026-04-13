@@ -24,6 +24,7 @@ from axon.types import (
     HealthStatus,
     Message,
     ProviderHealth,
+    ProviderName,
 )
 
 _MAX_RESPONSE_BYTES = 1 * 1024 * 1024  # 1 MiB
@@ -65,7 +66,7 @@ class AkashProvider(IAxonProvider):
         return self._mnemonic_buf.decode('utf-8') if self._mnemonic_buf else ''
 
     @property
-    def name(self) -> str:
+    def name(self) -> ProviderName:
         return "akash"
 
     # ------------------------------------------------------------------
@@ -363,6 +364,9 @@ class AkashProvider(IAxonProvider):
             return deployments
         except (subprocess.CalledProcessError, json.JSONDecodeError):
             return []
+
+    async def teardown(self, deployment_id: str) -> None:
+        """No centralized teardown — deployment expires naturally on the network."""
 
     async def health(self) -> ProviderHealth:
         """Check Akash RPC node reachability."""

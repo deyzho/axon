@@ -63,6 +63,10 @@ class AxonClient:
         """List all active deployments."""
         return await self._provider.list_deployments()
 
+    async def teardown(self, deployment_id: str) -> None:
+        """Delete or stop a deployment by its ID."""
+        await self._provider.teardown(deployment_id)
+
     async def send(self, processor_id: str, payload: Any) -> None:
         """Send a payload to a running processor."""
         import re

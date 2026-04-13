@@ -107,7 +107,7 @@ class AxonRouter:
         }
         self._strategy = strategy
         self._health_check_interval = health_check_interval
-        self._health_task: asyncio.Task | None = None
+        self._health_task: asyncio.Task[None] | None = None
 
     async def connect(self) -> None:
         """Connect to all configured providers concurrently."""
@@ -184,7 +184,12 @@ class AxonRouter:
     def on_message(self, handler: Callable[[Message], None]) -> Callable[[], None]:
         """Register a message handler across all providers."""
         unsubscribers = [s.provider.on_message(handler) for s in self._slots.values()]
-        return lambda: [u() for u in unsubscribers]
+
+        def _unsubscribe() -> None:
+            for u in unsubscribers:
+                u()
+
+        return _unsubscribe
 
     def health_report(self) -> dict[ProviderName, ProviderHealth]:
         """Return health status for all providers."""

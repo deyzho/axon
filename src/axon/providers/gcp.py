@@ -22,6 +22,7 @@ from axon.types import (
     HealthStatus,
     Message,
     ProviderHealth,
+    ProviderName,
 )
 
 
@@ -50,7 +51,7 @@ class GCPProvider(IAxonProvider):
         self._message_handlers: list[Callable[[Message], None]] = []
 
     @property
-    def name(self) -> str:
+    def name(self) -> ProviderName:
         return "gcp"
 
     # ------------------------------------------------------------------
@@ -62,8 +63,8 @@ class GCPProvider(IAxonProvider):
         Authenticate using Application Default Credentials or a service account key file.
         """
         try:
-            import google.auth  # type: ignore[import-untyped]
-            import google.auth.transport.requests  # type: ignore[import-untyped]
+            import google.auth
+            import google.auth.transport.requests
         except ImportError as exc:
             raise ProviderError(
                 "gcp",
@@ -116,7 +117,7 @@ class GCPProvider(IAxonProvider):
     async def _deploy_run(self, config: DeploymentConfig) -> Deployment:
         """Deploy a container to Cloud Run via the REST API."""
         try:
-            import google.auth.transport.requests  # type: ignore[import-untyped]
+            import google.auth.transport.requests
             import httpx
         except ImportError as exc:
             raise ProviderError("gcp", "Install with: pip install axon[gcp]") from exc
@@ -133,11 +134,13 @@ class GCPProvider(IAxonProvider):
         ]
 
         # Refresh credentials token
+        assert self._credentials is not None
+        creds = self._credentials
         request = google.auth.transport.requests.Request()
         await asyncio.get_event_loop().run_in_executor(
-            None, lambda: self._credentials.refresh(request)
+            None, lambda: creds.refresh(request)
         )
-        token = self._credentials.token
+        token = creds.token
 
         run_url = (
             f"https://run.googleapis.com/v2/projects/{self._project}"
@@ -200,7 +203,7 @@ class GCPProvider(IAxonProvider):
     async def _deploy_functions(self, config: DeploymentConfig) -> Deployment:
         """Deploy a Python/Node.js function to Cloud Functions (2nd gen)."""
         import httpx
-        import google.auth.transport.requests  # type: ignore[import-untyped]
+        import google.auth.transport.requests
 
         func_name = _sanitise_name(config.name)
         entry = Path(config.entry_point)
@@ -211,11 +214,13 @@ class GCPProvider(IAxonProvider):
         zip_path = _build_source_zip(entry, config)
 
         try:
+            assert self._credentials is not None
+            creds = self._credentials
             request = google.auth.transport.requests.Request()
             await asyncio.get_event_loop().run_in_executor(
-                None, lambda: self._credentials.refresh(request)
+                None, lambda: creds.refresh(request)
             )
-            token = self._credentials.token
+            token = creds.token
 
             # Upload source to GCS staging bucket
             gcs_bucket = config.metadata.get("gcs_bucket", f"{self._project}-gcf-source")
@@ -308,18 +313,20 @@ class GCPProvider(IAxonProvider):
     async def send(self, processor_id: str, payload: Any) -> None:
         """POST payload to a Cloud Run service or Cloud Functions endpoint."""
         import httpx
-        import google.auth.transport.requests  # type: ignore[import-untyped]
+        import google.auth.transport.requests
 
         endpoint = self._service_urls.get(processor_id)
         if not endpoint:
             raise ProviderError("gcp", f"No endpoint for {processor_id}. Did you deploy first?")
 
         # Refresh token for authenticated Cloud Run services
+        assert self._credentials is not None
+        creds = self._credentials
         request = google.auth.transport.requests.Request()
         await asyncio.get_event_loop().run_in_executor(
-            None, lambda: self._credentials.refresh(request)
+            None, lambda: creds.refresh(request)
         )
-        token = self._credentials.token
+        token = creds.token
 
         async with httpx.AsyncClient(timeout=60.0) as client:
             resp = await client.post(
@@ -348,12 +355,14 @@ class GCPProvider(IAxonProvider):
     async def list_deployments(self) -> list[Deployment]:
         if not self._connected:
             raise ProviderError("gcp", "Not connected.")
-        import httpx, google.auth.transport.requests  # type: ignore[import-untyped]
+        import httpx, google.auth.transport.requests
+        assert self._credentials is not None
+        creds = self._credentials
         request = google.auth.transport.requests.Request()
         await asyncio.get_event_loop().run_in_executor(
-            None, lambda: self._credentials.refresh(request)
+            None, lambda: creds.refresh(request)
         )
-        token = self._credentials.token
+        token = creds.token
         async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.get(
                 f"https://run.googleapis.com/v2/projects/{self._project}/locations/{self._region}/services",
@@ -374,6 +383,38 @@ class GCPProvider(IAxonProvider):
             )
             for svc in services
         ]
+
+    async def teardown(self, deployment_id: str) -> None:
+        """Delete a Cloud Run service."""
+        if not self._connected:
+            return
+        try:
+            import google.auth.transport.requests
+            import httpx
+            assert self._credentials is not None
+            creds = self._credentials
+            request = google.auth.transport.requests.Request()
+            await asyncio.get_event_loop().run_in_executor(
+                None, lambda: creds.refresh(request)
+            )
+            token = creds.token
+            # deployment_id may be just the service name or full resource name
+            if deployment_id.startswith("projects/"):
+                service_name = deployment_id
+            else:
+                service_name = (
+                    f"projects/{self._project}/locations/{self._region}/services/{deployment_id}"
+                )
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                resp = await client.delete(
+                    f"https://run.googleapis.com/v2/{service_name}",
+                    headers={"Authorization": f"Bearer {token}"},
+                )
+                # 200/202 = deletion started, 404 = already gone
+                if resp.status_code not in (200, 202, 404):
+                    resp.raise_for_status()
+        except Exception:
+            pass  # Best effort
 
     async def health(self) -> ProviderHealth:
         """Probe Cloud Run API endpoint."""

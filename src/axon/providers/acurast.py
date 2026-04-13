@@ -22,6 +22,7 @@ from axon.types import (
     HealthStatus,
     Message,
     ProviderHealth,
+    ProviderName,
 )
 
 _MAX_RESPONSE_BYTES = 1 * 1024 * 1024  # 1 MiB
@@ -66,7 +67,7 @@ class AcurastProvider(IAxonProvider):
         return self._mnemonic_buf.decode('utf-8') if self._mnemonic_buf else ''
 
     @property
-    def name(self) -> str:
+    def name(self) -> ProviderName:
         return "acurast"
 
     # ------------------------------------------------------------------
@@ -98,7 +99,7 @@ class AcurastProvider(IAxonProvider):
 
         # Connect via websockets library
         try:
-            import websockets  # type: ignore[import-untyped]
+            import websockets
         except ImportError as exc:
             raise ProviderError(
                 "acurast", "websockets package required. Install with: pip install websockets"
@@ -339,6 +340,9 @@ class AcurastProvider(IAxonProvider):
             ]
         except (subprocess.CalledProcessError, json.JSONDecodeError):
             return []
+
+    async def teardown(self, deployment_id: str) -> None:
+        """No centralized teardown — deployment expires naturally on the network."""
 
     async def health(self) -> ProviderHealth:
         """Check Acurast WebSocket relay reachability via HTTP probe."""

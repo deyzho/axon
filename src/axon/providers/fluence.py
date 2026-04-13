@@ -22,6 +22,7 @@ from axon.types import (
     HealthStatus,
     Message,
     ProviderHealth,
+    ProviderName,
 )
 
 _MAX_RESPONSE_BYTES = 1 * 1024 * 1024  # 1 MiB
@@ -60,7 +61,7 @@ class FluenceProvider(IAxonProvider):
         self._message_handlers: list[Callable[[Message], None]] = []
 
     @property
-    def name(self) -> str:
+    def name(self) -> ProviderName:
         return "fluence"
 
     # ------------------------------------------------------------------
@@ -268,6 +269,9 @@ class FluenceProvider(IAxonProvider):
             ]
         except (subprocess.CalledProcessError, json.JSONDecodeError):
             return []
+
+    async def teardown(self, deployment_id: str) -> None:
+        """No centralized teardown — deployment expires naturally on the network."""
 
     async def health(self) -> ProviderHealth:
         """Check Fluence relay reachability via HTTP."""

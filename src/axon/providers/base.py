@@ -49,6 +49,14 @@ class IAxonProvider(ABC):
         """Return all active deployments for the authenticated account."""
 
     @abstractmethod
+    async def teardown(self, deployment_id: str) -> None:
+        """
+        Delete or stop a deployment.
+
+        Should be idempotent — must not raise if the deployment no longer exists.
+        """
+
+    @abstractmethod
     async def send(self, processor_id: str, payload: Any) -> None:
         """Send a payload to a running processor."""
 

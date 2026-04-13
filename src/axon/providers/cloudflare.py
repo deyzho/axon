@@ -24,6 +24,7 @@ from axon.types import (
     HealthStatus,
     Message,
     ProviderHealth,
+    ProviderName,
 )
 
 _CF_API = "https://api.cloudflare.com/client/v4"
@@ -50,7 +51,7 @@ class CloudflareProvider(IAxonProvider):
         self._message_handlers: list[Callable[[Message], None]] = []
 
     @property
-    def name(self) -> str:
+    def name(self) -> ProviderName:
         return "cloudflare"
 
     # ------------------------------------------------------------------
@@ -247,6 +248,21 @@ class CloudflareProvider(IAxonProvider):
             )
             for s in scripts
         ]
+
+    async def teardown(self, deployment_id: str) -> None:
+        """Delete a Cloudflare Worker script."""
+        if not self._connected:
+            return
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                resp = await client.delete(
+                    f"https://api.cloudflare.com/client/v4/accounts/{self._account_id}/workers/scripts/{deployment_id}",
+                    headers={"Authorization": f"Bearer {self._api_token}"},
+                )
+                if resp.status_code not in (200, 404):
+                    resp.raise_for_status()
+        except Exception:
+            pass  # Best effort
 
     async def health(self) -> ProviderHealth:
         """Probe Cloudflare API."""

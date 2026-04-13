@@ -8,7 +8,7 @@ import tempfile
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Literal
 
 import httpx
 
@@ -22,6 +22,7 @@ from axon.types import (
     HealthStatus,
     Message,
     ProviderHealth,
+    ProviderName,
 )
 
 # Maximum response body size (4 MiB — larger than other providers for GPU output)
@@ -60,7 +61,7 @@ class IoNetProvider(IAxonProvider):
         self._message_handlers: list[Callable[[Message], None]] = []
 
     @property
-    def name(self) -> str:
+    def name(self) -> ProviderName:
         return "ionet"
 
     # ------------------------------------------------------------------
@@ -236,7 +237,7 @@ class IoNetProvider(IAxonProvider):
             raise DeploymentError("ionet", "No clusters available.")
         # Sort by hourly price, pick cheapest
         clusters.sort(key=lambda c: c.get("price_per_hour_usd", 9999))
-        return clusters[0]["cluster_id"]
+        return str(clusters[0]["cluster_id"])
 
     # ------------------------------------------------------------------
     # Send / receive
@@ -321,6 +322,9 @@ class IoNetProvider(IAxonProvider):
             )
         return result
 
+    async def teardown(self, deployment_id: str) -> None:
+        """No centralized teardown — deployment expires naturally on the network."""
+
     async def health(self) -> ProviderHealth:
         if not self._client:
             return ProviderHealth(provider="ionet", status=HealthStatus.UNHEALTHY, error="Not connected")
@@ -371,8 +375,10 @@ def _validate_endpoint_url(url: str) -> None:
     assert_safe_url(url, "ionet", "Worker endpoint")
 
 
-def _map_status(raw: str) -> str:
-    mapping = {"running": "active", "pending": "pending", "stopped": "stopped", "failed": "failed"}
+def _map_status(raw: str) -> Literal["pending", "active", "stopped", "failed"]:
+    mapping: dict[str, Literal["pending", "active", "stopped", "failed"]] = {
+        "running": "active", "pending": "pending", "stopped": "stopped", "failed": "failed"
+    }
     return mapping.get(raw.lower(), "pending")
 
 

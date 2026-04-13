@@ -22,6 +22,7 @@ from axon.types import (
     HealthStatus,
     Message,
     ProviderHealth,
+    ProviderName,
 )
 
 
@@ -50,7 +51,7 @@ class AzureProvider(IAxonProvider):
         self._message_handlers: list[Callable[[Message], None]] = []
 
     @property
-    def name(self) -> str:
+    def name(self) -> ProviderName:
         return "azure"
 
     # ------------------------------------------------------------------
@@ -63,7 +64,7 @@ class AzureProvider(IAxonProvider):
         DefaultAzureCredential for managed identity / CLI auth.
         """
         try:
-            from azure.identity import ClientSecretCredential, DefaultAzureCredential  # type: ignore[import-untyped]
+            from azure.identity import ClientSecretCredential, DefaultAzureCredential
         except ImportError as exc:
             raise ProviderError(
                 "azure",
@@ -95,9 +96,11 @@ class AzureProvider(IAxonProvider):
 
         # Validate by getting a token
         try:
+            assert self._credential is not None
+            cred = self._credential
             await asyncio.get_event_loop().run_in_executor(
                 None,
-                lambda: self._credential.get_token("https://management.azure.com/.default"),
+                lambda: cred.get_token("https://management.azure.com/.default"),
             )
         except Exception as exc:
             raise AuthError(f"Azure authentication failed: {exc}") from exc
@@ -124,8 +127,8 @@ class AzureProvider(IAxonProvider):
     async def _deploy_aci(self, config: DeploymentConfig) -> Deployment:
         """Deploy a container to Azure Container Instances."""
         try:
-            from azure.mgmt.containerinstance import ContainerInstanceManagementClient  # type: ignore[import-untyped]
-            from azure.mgmt.containerinstance.models import (  # type: ignore[import-untyped]
+            from azure.mgmt.containerinstance import ContainerInstanceManagementClient
+            from azure.mgmt.containerinstance.models import (
                 ContainerGroup, Container, ContainerPort,
                 ResourceRequirements, ResourceRequests,
                 IpAddress, Port, OperatingSystemTypes,
@@ -209,9 +212,11 @@ class AzureProvider(IAxonProvider):
         zip_path = _build_functions_zip(entry, config)
 
         try:
+            assert self._credential is not None
+            cred = self._credential
             token = await asyncio.get_event_loop().run_in_executor(
                 None,
-                lambda: self._credential.get_token(
+                lambda: cred.get_token(
                     "https://management.azure.com/.default"
                 ).token,
             )
@@ -262,9 +267,11 @@ class AzureProvider(IAxonProvider):
         if not endpoint:
             raise ProviderError("azure", f"No endpoint for {processor_id}. Did you deploy first?")
 
+        assert self._credential is not None
+        cred = self._credential
         token = await asyncio.get_event_loop().run_in_executor(
             None,
-            lambda: self._credential.get_token("https://management.azure.com/.default").token,
+            lambda: cred.get_token("https://management.azure.com/.default").token,
         )
 
         async with httpx.AsyncClient(timeout=60.0) as client:
@@ -295,7 +302,7 @@ class AzureProvider(IAxonProvider):
         if not self._connected:
             raise ProviderError("azure", "Not connected.")
         try:
-            from azure.mgmt.containerinstance import ContainerInstanceManagementClient  # type: ignore[import-untyped]
+            from azure.mgmt.containerinstance import ContainerInstanceManagementClient
             aci_client = ContainerInstanceManagementClient(self._credential, self._subscription_id)
             groups = await asyncio.get_event_loop().run_in_executor(
                 None,
@@ -315,6 +322,24 @@ class AzureProvider(IAxonProvider):
             ]
         except Exception:
             return []
+
+    async def teardown(self, deployment_id: str) -> None:
+        """Delete an ACI container group."""
+        if not self._connected:
+            return
+        try:
+            from azure.mgmt.containerinstance import ContainerInstanceManagementClient
+            aci_client = ContainerInstanceManagementClient(self._credential, self._subscription_id)
+            # deployment_id may be full Azure resource ID or just container group name
+            name = deployment_id.split("/")[-1] if "/" in deployment_id else deployment_id
+            await asyncio.get_event_loop().run_in_executor(
+                None,
+                lambda: aci_client.container_groups.begin_delete(
+                    self._resource_group, name
+                ).result(),
+            )
+        except Exception:
+            pass  # Best effort
 
     async def health(self) -> ProviderHealth:
         """Probe Azure management API."""
