@@ -322,10 +322,10 @@ Axon is the **Python** compute routing SDK. If you're building with **TypeScript
 
 | Package | Description |
 |---|---|
-| [`@axonsdk/sdk`](https://github.com/deyzho/phonixsdk) | TypeScript SDK — same providers, same routing strategies |
-| [`@axonsdk/mobile`](https://github.com/deyzho/phonixsdk) | React Native / Expo SDK for iOS & Android |
-| [`@axonsdk/cli`](https://github.com/deyzho/phonixsdk) | CLI — `axon init`, `axon deploy`, `axon status` |
-| [`@axonsdk/inference`](https://github.com/deyzho/phonixsdk) | OpenAI-compatible inference handler for Next.js |
+| [`@phonixsdk/sdk`](https://github.com/deyzho/phonixsdk) | TypeScript SDK — same providers, same routing strategies |
+| [`@phonixsdk/mobile`](https://github.com/deyzho/phonixsdk) | React Native / Expo SDK for iOS & Android |
+| [`@phonixsdk/cli`](https://github.com/deyzho/phonixsdk) | CLI — `axon init`, `axon deploy`, `axon status` |
+| [`@phonixsdk/inference`](https://github.com/deyzho/phonixsdk) | OpenAI-compatible inference handler for Next.js |
 
 **[phonixsdk.dev](https://phonixsdk.dev)** — full documentation for the TypeScript ecosystem.
 
