@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "axon"
+name = "axonsdk"
 version = "0.1.7"
 description = "Provider-agnostic edge compute SDK for AI workload routing"
 readme = "README.md"
