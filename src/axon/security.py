@@ -8,7 +8,6 @@ from urllib.parse import urlparse
 
 from axon.exceptions import AxonError
 
-
 # Regex that matches private/loopback/unroutable IP ranges in URLs.
 # Covers:
 #   - localhost

@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from enum import Enum
+from datetime import UTC, datetime
+from enum import StrEnum
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
-
 
 ProviderName = Literal[
     # Edge / decentralised
@@ -17,20 +16,20 @@ ProviderName = Literal[
 ]
 
 
-class RuntimeType(str, Enum):
+class RuntimeType(StrEnum):
     NODEJS = "nodejs"
     WASM = "wasm"
     DOCKER = "docker"
 
 
-class RoutingStrategy(str, Enum):
+class RoutingStrategy(StrEnum):
     LATENCY = "latency"        # Route to fastest provider
     COST = "cost"              # Route to cheapest provider
     ROUND_ROBIN = "round_robin"
     FAILOVER = "failover"      # Primary + fallbacks
 
 
-class HealthStatus(str, Enum):
+class HealthStatus(StrEnum):
     HEALTHY = "healthy"
     DEGRADED = "degraded"
     UNHEALTHY = "unhealthy"
@@ -82,7 +81,7 @@ class Message(BaseModel):
     id: str | None = None
     processor_id: str
     payload: Any
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -93,5 +92,5 @@ class ProviderHealth(BaseModel):
     status: HealthStatus
     latency_ms: float | None = None
     success_rate: float | None = None  # 0.0 - 1.0
-    last_checked: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    last_checked: datetime = Field(default_factory=lambda: datetime.now(UTC))
     error: str | None = None

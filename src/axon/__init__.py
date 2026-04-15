@@ -10,16 +10,16 @@ Quickstart:
 """
 
 from axon.client import AxonClient
+from axon.exceptions import AxonError, ConfigError, ProviderError
 from axon.router import AxonRouter
-from axon.exceptions import AxonError, ProviderError, ConfigError
 from axon.types import (
-    DeploymentConfig,
-    Deployment,
     CostEstimate,
+    Deployment,
+    DeploymentConfig,
+    HealthStatus,
     Message,
     ProviderName,
     RoutingStrategy,
-    HealthStatus,
 )
 from axon.utils.retry import with_retry
 

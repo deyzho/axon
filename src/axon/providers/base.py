@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from axon.types import (
     CostEstimate,
@@ -76,7 +77,7 @@ class IAxonProvider(ABC):
         from axon.types import HealthStatus
         return ProviderHealth(provider=self.name, status=HealthStatus.HEALTHY)
 
-    async def __aenter__(self) -> "IAxonProvider":
+    async def __aenter__(self) -> IAxonProvider:
         return self
 
     async def __aexit__(self, *_: Any) -> None:

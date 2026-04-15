@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import os
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from axon.exceptions import AuthError, AxonError
 from axon.providers import get_provider
@@ -91,7 +92,7 @@ class AxonClient:
         """Return current health status of the provider."""
         return await self._provider.health()
 
-    async def __aenter__(self) -> "AxonClient":
+    async def __aenter__(self) -> AxonClient:
         await self.connect()
         return self
 

@@ -12,7 +12,6 @@ from pydantic import BaseModel, Field
 from axon.exceptions import ConfigError
 from axon.types import ProviderName, RuntimeType
 
-
 CONFIG_FILENAME = "axon.json"
 
 
@@ -75,7 +74,7 @@ def generate_env_template(provider: ProviderName) -> str:
 
     lines = [
         "# Run: axon auth to fill these in interactively.",
-        f"AXON_SECRET_KEY=",
+        "AXON_SECRET_KEY=",
     ]
 
     provider_vars: dict[ProviderName, list[str]] = {

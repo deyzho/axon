@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Any, AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Any
 
 import httpx
 
 from axon.exceptions import ProviderError
-
 
 AXON_MODELS = {
     "axon-llama-3-70b": {

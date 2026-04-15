@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import asyncio
 import time
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
-from axon.exceptions import AxonError, ProviderError
+from axon.exceptions import AxonError
 from axon.providers import get_provider
 from axon.providers.base import IAxonProvider
 from axon.types import (
@@ -147,9 +148,9 @@ class AxonRouter:
             return available[0]
         elif self._strategy == RoutingStrategy.ROUND_ROBIN:
             # Simple round-robin using index
-            slot = available[0]
+            available[0]
             # Rotate by moving the first to the end
-            names = list(self._slots.keys())
+            list(self._slots.keys())
             available_names = [s.provider.name for s in available]
             return available[available_names.index(available[0].provider.name)]
         else:  # FAILOVER
@@ -209,7 +210,7 @@ class AxonRouter:
                         error=str(exc),
                     )
 
-    async def __aenter__(self) -> "AxonRouter":
+    async def __aenter__(self) -> AxonRouter:
         await self.connect()
         return self
 

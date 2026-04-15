@@ -1,16 +1,16 @@
 """Axon provider implementations."""
 
-from axon.providers.base import IAxonProvider
-from axon.providers.ionet import IoNetProvider
-from axon.providers.akash import AkashProvider
 from axon.providers.acurast import AcurastProvider
-from axon.providers.fluence import FluenceProvider
-from axon.providers.koii import KoiiProvider
+from axon.providers.akash import AkashProvider
 from axon.providers.aws import AWSProvider
-from axon.providers.gcp import GCPProvider
 from axon.providers.azure import AzureProvider
+from axon.providers.base import IAxonProvider
 from axon.providers.cloudflare import CloudflareProvider
+from axon.providers.fluence import FluenceProvider
 from axon.providers.fly import FlyProvider
+from axon.providers.gcp import GCPProvider
+from axon.providers.ionet import IoNetProvider
+from axon.providers.koii import KoiiProvider
 from axon.types import ProviderName
 
 PROVIDER_REGISTRY: dict[ProviderName, type[IAxonProvider]] = {
