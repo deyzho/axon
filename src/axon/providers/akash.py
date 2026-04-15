@@ -8,9 +8,10 @@ import re
 import subprocess
 import tempfile
 import textwrap
-from datetime import datetime, timezone
+from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import httpx
 
@@ -163,7 +164,7 @@ class AkashProvider(IAxonProvider):
                     name=config.name,
                     provider="akash",
                     status="active" if endpoint else "pending",
-                    created_at=datetime.now(timezone.utc),
+                    created_at=datetime.now(UTC),
                     endpoint=endpoint or None,
                     metadata={
                         "dseq": dseq,
@@ -357,7 +358,7 @@ class AkashProvider(IAxonProvider):
                         name=dseq,
                         provider="akash",
                         status="active" if state == "active" else "stopped",
-                        created_at=datetime.now(timezone.utc),
+                        created_at=datetime.now(UTC),
                         endpoint=self._endpoints.get(dseq),
                     )
                 )
@@ -410,7 +411,10 @@ _SECRET_SUFFIXES = ("_KEY", "_SECRET", "_TOKEN", "_PASSWORD", "_MNEMONIC", "_PRI
 
 
 def _filter_env(env: dict[str, str]) -> dict[str, str]:
-    return {k: v for k, v in env.items() if not any(k.upper().endswith(s) for s in _SECRET_SUFFIXES)}
+    return {
+        k: v for k, v in env.items()
+        if not any(k.upper().endswith(s) for s in _SECRET_SUFFIXES)
+    }
 
 
 def _validate_ipfs_url(url: str, provider: str) -> None:

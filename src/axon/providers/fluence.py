@@ -7,9 +7,10 @@ import os
 import re
 import subprocess
 import tempfile
-from datetime import datetime, timezone
+from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import httpx
 
@@ -28,7 +29,9 @@ from axon.types import (
 _MAX_RESPONSE_BYTES = 1 * 1024 * 1024  # 1 MiB
 
 # Default Fluence relay multiaddr (Kras-00)
-_DEFAULT_RELAY = "/dns4/kras-00.fluence.dev/tcp/19001/wss/p2p/12D3KooWSD5PToNiLQwKDXsu8JSysCwUt8BVUJEqCHcDe7P5h45e"
+_DEFAULT_RELAY = (
+    "/dns4/kras-00.fluence.dev/tcp/19001/wss/p2p/12D3KooWSD5PToNiLQwKDXsu8JSysCwUt8BVUJEqCHcDe7P5h45e"
+)
 
 # Aqua function TTL in milliseconds
 _DEFAULT_TTL_MS = 30_000
@@ -84,7 +87,8 @@ class FluenceProvider(IAxonProvider):
         clean = key.replace("0x", "")
         if len(clean) not in (64, 128):  # 32 or 64 bytes
             raise AuthError(
-                "FLUENCE_PRIVATE_KEY must be a 32-byte (64 hex chars) or 64-byte (128 hex chars) Ed25519 key."
+                "FLUENCE_PRIVATE_KEY must be a 32-byte (64 hex chars) "
+                "or 64-byte (128 hex chars) Ed25519 key."
             )
 
         self._private_key = clean
@@ -142,7 +146,7 @@ class FluenceProvider(IAxonProvider):
                     name=config.name,
                     provider="fluence",
                     status="active" if worker_ids else "pending",
-                    created_at=datetime.now(timezone.utc),
+                    created_at=datetime.now(UTC),
                     endpoint=None,  # Fluence uses P2P, no HTTP endpoint
                     metadata={
                         "deal_id": deal_id,
@@ -261,7 +265,7 @@ class FluenceProvider(IAxonProvider):
                     name=item.get("dealId", ""),
                     provider="fluence",
                     status="active" if item.get("status") == "active" else "stopped",
-                    created_at=datetime.now(timezone.utc),
+                    created_at=datetime.now(UTC),
                     endpoint=None,
                     metadata={"worker_ids": item.get("workerIds", [])},
                 )
@@ -294,7 +298,9 @@ class FluenceProvider(IAxonProvider):
             return ProviderHealth(provider="fluence", status=status, latency_ms=latency_ms)
         except Exception as exc:
             if self._connected:
-                return ProviderHealth(provider="fluence", status=HealthStatus.DEGRADED, error=str(exc))
+                return ProviderHealth(
+                    provider="fluence", status=HealthStatus.DEGRADED, error=str(exc)
+                )
             return ProviderHealth(provider="fluence", status=HealthStatus.UNHEALTHY, error=str(exc))
 
     async def estimate(self, config: DeploymentConfig) -> CostEstimate:
@@ -322,7 +328,10 @@ _SECRET_SUFFIXES = ("_KEY", "_SECRET", "_TOKEN", "_PASSWORD", "_MNEMONIC", "_PRI
 
 
 def _filter_env(env: dict[str, str]) -> dict[str, str]:
-    return {k: v for k, v in env.items() if not any(k.upper().endswith(s) for s in _SECRET_SUFFIXES)}
+    return {
+        k: v for k, v in env.items()
+        if not any(k.upper().endswith(s) for s in _SECRET_SUFFIXES)
+    }
 
 
 def _require_cli(name: str, docs_url: str) -> None:

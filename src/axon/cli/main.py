@@ -6,7 +6,6 @@ import asyncio
 import json
 import os
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.console import Console
@@ -22,11 +21,10 @@ console = Console()
 
 @app.command()
 def init(
-    provider: Optional[str] = typer.Option(None, "--provider", "-p", help="Provider name"),
+    provider: str | None = typer.Option(None, "--provider", "-p", help="Provider name"),
 ) -> None:
     """Interactive setup: create axon.json and .env for your project."""
     from axon.config import generate_config, generate_env_template
-    from axon.types import ProviderName
 
     cwd = Path.cwd()
     config_path = cwd / "axon.json"
@@ -50,22 +48,22 @@ def init(
         provider=provider,  # type: ignore[arg-type]
     )
     config_path.write_text(config_json)
-    console.print(f"[green]✓[/green] Created axon.json")
+    console.print("[green]✓[/green] Created axon.json")
 
     env_path = cwd / ".env"
     if not env_path.exists():
         env_content = generate_env_template(provider)  # type: ignore[arg-type]
         env_path.write_text(env_content)
-        console.print(f"[green]✓[/green] Created .env")
+        console.print("[green]✓[/green] Created .env")
 
     console.print("\n[bold]Next steps:[/bold]")
     console.print(f"  1. Run [cyan]axon auth {provider}[/cyan] to configure credentials")
-    console.print(f"  2. Run [cyan]axon deploy[/cyan] to deploy your workload")
+    console.print("  2. Run [cyan]axon deploy[/cyan] to deploy your workload")
 
 
 @app.command()
 def deploy(
-    cwd: Optional[str] = typer.Option(None, "--cwd", help="Project directory"),
+    cwd: str | None = typer.Option(None, "--cwd", help="Project directory"),
 ) -> None:
     """Bundle and deploy your workload to the configured provider."""
     from axon.client import AxonClient
@@ -119,7 +117,7 @@ def deploy(
 
 @app.command()
 def status(
-    cwd: Optional[str] = typer.Option(None, "--cwd", help="Project directory"),
+    cwd: str | None = typer.Option(None, "--cwd", help="Project directory"),
 ) -> None:
     """List active deployments."""
     from axon.client import AxonClient
@@ -163,7 +161,7 @@ def status(
 def send(
     processor_id: str = typer.Argument(..., help="Processor/deployment ID"),
     message: str = typer.Argument(..., help="JSON payload to send"),
-    cwd: Optional[str] = typer.Option(None, "--cwd"),
+    cwd: str | None = typer.Option(None, "--cwd"),
 ) -> None:
     """Send a test message to a running processor."""
     from axon.client import AxonClient
@@ -194,7 +192,7 @@ def send(
 @app.command()
 def teardown(
     deployment_id: str = typer.Argument(..., help="Deployment ID to remove"),
-    cwd: Optional[str] = typer.Option(None, "--cwd", help="Project directory"),
+    cwd: str | None = typer.Option(None, "--cwd", help="Project directory"),
 ) -> None:
     """Delete a deployment from the provider."""
     from axon.client import AxonClient
@@ -215,7 +213,8 @@ def teardown(
 
     async def _run() -> None:
         async with AxonClient(provider=config.provider, secret_key=secret_key) as client:
-            with console.status(f"Removing [cyan]{deployment_id}[/cyan] from [cyan]{config.provider}[/cyan]..."):
+            msg = f"Removing [cyan]{deployment_id}[/cyan] from [cyan]{config.provider}[/cyan]..."
+            with console.status(msg):
                 await client.teardown(deployment_id)
             console.print(f"[green]✓[/green] Deployment [cyan]{deployment_id}[/cyan] removed.")
 
@@ -228,7 +227,9 @@ def teardown(
 
 @app.command()
 def auth(
-    provider: str = typer.Argument(..., help="Provider to authenticate (ionet, akash, acurast, fluence, koii)"),
+    provider: str = typer.Argument(
+        ..., help="Provider to authenticate (ionet, akash, acurast, fluence, koii)"
+    ),
 ) -> None:
     """Configure credentials for a provider."""
     console.print(f"[bold]Authenticating with {provider}...[/bold]")
@@ -277,7 +278,9 @@ def auth(
         return v.replace("\r", "").replace("\n", "")
 
     for env_var, prompt_text in provider_prompts[provider]:
-        sensitive = "KEY" in env_var or "MNEMONIC" in env_var or "SECRET" in env_var or "TOKEN" in env_var
+        sensitive = (
+            "KEY" in env_var or "MNEMONIC" in env_var or "SECRET" in env_var or "TOKEN" in env_var
+        )
         raw_value = typer.prompt(prompt_text, hide_input=sensitive)
         value = _sanitize_value(raw_value)
         # Update or append to .env
@@ -294,8 +297,8 @@ def auth(
     # Restrict .env permissions to owner-read/write only (prevents other OS users
     # from reading credentials stored in plain text).
     os.chmod(str(env_path), 0o600)
-    console.print(f"[green]✓[/green] Credentials saved to .env")
-    console.print(f"\nRun [cyan]axon deploy[/cyan] to deploy your workload.")
+    console.print("[green]✓[/green] Credentials saved to .env")
+    console.print("\nRun [cyan]axon deploy[/cyan] to deploy your workload.")
 
 
 if __name__ == "__main__":

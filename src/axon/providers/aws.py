@@ -5,12 +5,13 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import tempfile
 import time
 import zipfile
-import tempfile
-from datetime import datetime, timezone
+from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from axon.exceptions import AuthError, DeploymentError, ProviderError
 from axon.pricing import get_pricing
@@ -203,7 +204,7 @@ class AWSProvider(IAxonProvider):
                 name=config.name,
                 provider="aws",
                 status="active",
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
                 endpoint=function_url,
                 metadata={
                     "service": "lambda",
@@ -282,7 +283,7 @@ class AWSProvider(IAxonProvider):
             name=config.name,
             provider="aws",
             status="pending",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             endpoint=None,
             metadata={
                 "service": "fargate",
@@ -352,7 +353,7 @@ class AWSProvider(IAxonProvider):
                 status="active",
                 created_at=datetime.fromisoformat(
                     fn["LastModified"].replace("Z", "+00:00")
-                ) if "LastModified" in fn else datetime.now(timezone.utc),
+                ) if "LastModified" in fn else datetime.now(UTC),
                 endpoint=self._function_urls.get(fn["FunctionName"]),
                 metadata={"service": "lambda", "arn": fn["FunctionArn"]},
             )
@@ -383,7 +384,9 @@ class AWSProvider(IAxonProvider):
                 )
             latency_ms = (time.monotonic() - start) * 1000
             # 403 = reachable but unauthorized — that means Lambda endpoint is up
-            status = HealthStatus.HEALTHY if resp.status_code in (200, 403) else HealthStatus.DEGRADED
+            status = (
+                HealthStatus.HEALTHY if resp.status_code in (200, 403) else HealthStatus.DEGRADED
+            )
             return ProviderHealth(provider="aws", status=status, latency_ms=latency_ms)
         except Exception as exc:
             return ProviderHealth(provider="aws", status=HealthStatus.UNHEALTHY, error=str(exc))
@@ -418,7 +421,10 @@ _SECRET_SUFFIXES = ("_KEY", "_SECRET", "_TOKEN", "_PASSWORD", "_MNEMONIC", "_PRI
 
 
 def _filter_env(env: dict[str, str]) -> dict[str, str]:
-    return {k: v for k, v in env.items() if not any(k.upper().endswith(s) for s in _SECRET_SUFFIXES)}
+    return {
+        k: v for k, v in env.items()
+        if not any(k.upper().endswith(s) for s in _SECRET_SUFFIXES)
+    }
 
 
 def _sanitise_name(name: str) -> str:

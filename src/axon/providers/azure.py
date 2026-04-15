@@ -5,12 +5,13 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import tempfile
 import time
 import zipfile
-import tempfile
-from datetime import datetime, timezone
+from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from axon.exceptions import AuthError, DeploymentError, ProviderError
 from axon.pricing import get_pricing
@@ -129,10 +130,15 @@ class AzureProvider(IAxonProvider):
         try:
             from azure.mgmt.containerinstance import ContainerInstanceManagementClient
             from azure.mgmt.containerinstance.models import (
-                ContainerGroup, Container, ContainerPort,
-                ResourceRequirements, ResourceRequests,
-                IpAddress, Port, OperatingSystemTypes,
+                Container,
+                ContainerGroup,
+                ContainerPort,
                 EnvironmentVariable,
+                IpAddress,
+                OperatingSystemTypes,
+                Port,
+                ResourceRequests,
+                ResourceRequirements,
             )
         except ImportError as exc:
             raise ProviderError(
@@ -143,7 +149,7 @@ class AzureProvider(IAxonProvider):
         container_name = _sanitise_name(config.name)
         image = config.metadata.get(
             "image",
-            f"mcr.microsoft.com/azuredocs/aci-helloworld",  # placeholder
+            "mcr.microsoft.com/azuredocs/aci-helloworld",  # placeholder
         )
 
         env_vars = [
@@ -189,7 +195,7 @@ class AzureProvider(IAxonProvider):
             name=config.name,
             provider="azure",
             status="active" if ip else "pending",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             endpoint=endpoint,
             metadata={
                 "service": "aci",
@@ -246,7 +252,7 @@ class AzureProvider(IAxonProvider):
                 name=config.name,
                 provider="azure",
                 status="active",
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
                 endpoint=invoke_url,
                 metadata={"service": "functions", "app_name": app_name, "region": self._region},
             )
@@ -306,7 +312,9 @@ class AzureProvider(IAxonProvider):
             aci_client = ContainerInstanceManagementClient(self._credential, self._subscription_id)
             groups = await asyncio.get_event_loop().run_in_executor(
                 None,
-                lambda: list(aci_client.container_groups.list_by_resource_group(self._resource_group)),
+                lambda: list(
+                    aci_client.container_groups.list_by_resource_group(self._resource_group)
+                ),
             )
             return [
                 Deployment(
@@ -314,7 +322,7 @@ class AzureProvider(IAxonProvider):
                     name=g.name,
                     provider="azure",
                     status="active" if g.provisioning_state == "Succeeded" else "pending",
-                    created_at=datetime.now(timezone.utc),
+                    created_at=datetime.now(UTC),
                     endpoint=self._container_endpoints.get(g.name),
                     metadata={"service": "aci", "region": self._region},
                 )
@@ -349,7 +357,8 @@ class AzureProvider(IAxonProvider):
             async with httpx.AsyncClient(timeout=5.0) as client:
                 resp = await client.get("https://management.azure.com/")
             latency_ms = (time.monotonic() - start) * 1000
-            status = HealthStatus.HEALTHY if resp.status_code in (200, 401, 403) else HealthStatus.DEGRADED
+            ok_codes = (200, 401, 403)
+            status = HealthStatus.HEALTHY if resp.status_code in ok_codes else HealthStatus.DEGRADED
             return ProviderHealth(provider="azure", status=status, latency_ms=latency_ms)
         except Exception as exc:
             return ProviderHealth(provider="azure", status=HealthStatus.UNHEALTHY, error=str(exc))
@@ -359,7 +368,10 @@ class AzureProvider(IAxonProvider):
         vcpu = float(config.metadata.get("cpu", 1.0))
         mem_gb = config.memory_mb / 1024
         pricing = await get_pricing()
-        cost = (pricing.azure_aci_vcpu_sec * vcpu + pricing.azure_aci_gib_sec * mem_gb) * duration_s * config.replicas
+        cost = (
+            (pricing.azure_aci_vcpu_sec * vcpu + pricing.azure_aci_gib_sec * mem_gb)
+            * duration_s * config.replicas
+        )
         return CostEstimate(
             provider="azure",
             token="USD",
@@ -378,7 +390,10 @@ _SECRET_SUFFIXES = ("_KEY", "_SECRET", "_TOKEN", "_PASSWORD", "_MNEMONIC", "_PRI
 
 
 def _filter_env(env: dict[str, str]) -> dict[str, str]:
-    return {k: v for k, v in env.items() if not any(k.upper().endswith(s) for s in _SECRET_SUFFIXES)}
+    return {
+        k: v for k, v in env.items()
+        if not any(k.upper().endswith(s) for s in _SECRET_SUFFIXES)
+    }
 
 
 def _sanitise_name(name: str) -> str:

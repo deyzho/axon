@@ -7,9 +7,10 @@ import json
 import os
 import subprocess
 import tempfile
-from datetime import datetime, timezone
+from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import httpx
 
@@ -188,7 +189,7 @@ class AcurastProvider(IAxonProvider):
                 name=config.name,
                 provider="acurast",
                 status="active" if processor_ids else "pending",
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
                 endpoint=f"https://{deployment_id}.acu.run" if deployment_id else None,
                 metadata={
                     "bundle_cid": bundle_cid,
@@ -332,7 +333,7 @@ class AcurastProvider(IAxonProvider):
                     name=item.get("deploymentId", ""),
                     provider="acurast",
                     status="active" if item.get("status") == "live" else "pending",
-                    created_at=datetime.now(timezone.utc),
+                    created_at=datetime.now(UTC),
                     endpoint=f"https://{item.get('deploymentId', '')}.acu.run",
                     metadata={"processor_ids": item.get("processorIds", [])},
                 )
@@ -387,7 +388,10 @@ _SECRET_SUFFIXES = ("_KEY", "_SECRET", "_TOKEN", "_PASSWORD", "_MNEMONIC", "_PRI
 
 
 def _filter_env(env: dict[str, str]) -> dict[str, str]:
-    return {k: v for k, v in env.items() if not any(k.upper().endswith(s) for s in _SECRET_SUFFIXES)}
+    return {
+        k: v for k, v in env.items()
+        if not any(k.upper().endswith(s) for s in _SECRET_SUFFIXES)
+    }
 
 
 def _require_cli(name: str, docs_url: str) -> None:

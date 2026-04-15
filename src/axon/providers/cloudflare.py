@@ -6,11 +6,10 @@ import json
 import os
 import re
 import time
-import zipfile
-import tempfile
-from datetime import datetime, timezone
+from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import httpx
 
@@ -129,7 +128,6 @@ class CloudflareProvider(IAxonProvider):
         full_source = preamble + source
 
         # Upload using multipart Workers API
-        import io
         metadata = {
             "main_module": "worker.js",
             "bindings": [],
@@ -171,7 +169,7 @@ class CloudflareProvider(IAxonProvider):
                 name=config.name,
                 provider="cloudflare",
                 status="active",
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
                 endpoint=worker_url,
                 metadata={
                     "script_name": script_name,
@@ -242,7 +240,7 @@ class CloudflareProvider(IAxonProvider):
                 status="active",
                 created_at=datetime.fromisoformat(
                     s["created_on"].replace("Z", "+00:00")
-                ) if "created_on" in s else datetime.now(timezone.utc),
+                ) if "created_on" in s else datetime.now(UTC),
                 endpoint=self._worker_urls.get(s.get("id", "")),
                 metadata={"account_id": self._account_id},
             )
@@ -274,7 +272,9 @@ class CloudflareProvider(IAxonProvider):
             status = HealthStatus.HEALTHY if resp.is_success else HealthStatus.DEGRADED
             return ProviderHealth(provider="cloudflare", status=status, latency_ms=latency_ms)
         except Exception as exc:
-            return ProviderHealth(provider="cloudflare", status=HealthStatus.UNHEALTHY, error=str(exc))
+            return ProviderHealth(
+                provider="cloudflare", status=HealthStatus.UNHEALTHY, error=str(exc)
+            )
 
     async def estimate(self, config: DeploymentConfig) -> CostEstimate:
         # Workers Paid: $5/month + $0.50/million requests after first 10M
@@ -287,7 +287,10 @@ class CloudflareProvider(IAxonProvider):
             amount=est,
             usd_estimate=est,
             per_hour=False,
-            breakdown={"price_per_request": pricing.cf_worker_request, "requests": float(config.replicas)},
+            breakdown={
+                "price_per_request": pricing.cf_worker_request,
+                "requests": float(config.replicas),
+            },
         )
 
 
@@ -299,7 +302,10 @@ _SECRET_SUFFIXES = ("_KEY", "_SECRET", "_TOKEN", "_PASSWORD", "_MNEMONIC", "_PRI
 
 
 def _filter_env(env: dict[str, str]) -> dict[str, str]:
-    return {k: v for k, v in env.items() if not any(k.upper().endswith(s) for s in _SECRET_SUFFIXES)}
+    return {
+        k: v for k, v in env.items()
+        if not any(k.upper().endswith(s) for s in _SECRET_SUFFIXES)
+    }
 
 
 def _sanitise_worker_name(name: str) -> str:

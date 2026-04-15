@@ -6,9 +6,10 @@ import json
 import os
 import tempfile
 import time
-from datetime import datetime, timezone
+from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable, Literal
+from typing import Any, Literal
 
 import httpx
 
@@ -152,7 +153,7 @@ class IoNetProvider(IAxonProvider):
                 name=config.name,
                 provider="ionet",
                 status="active" if worker_endpoints else "pending",
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
                 endpoint=worker_endpoints[0] if worker_endpoints else None,
                 metadata={
                     "cluster_id": cluster_id,
@@ -163,7 +164,8 @@ class IoNetProvider(IAxonProvider):
 
         except httpx.HTTPStatusError as exc:
             raise DeploymentError(
-                "ionet", f"Job submission failed (HTTP {exc.response.status_code}): {exc.response.text}"
+                "ionet",
+                f"Job submission failed (HTTP {exc.response.status_code}): {exc.response.text}",
             ) from exc
         finally:
             # Clean up temp bundle
@@ -327,7 +329,9 @@ class IoNetProvider(IAxonProvider):
 
     async def health(self) -> ProviderHealth:
         if not self._client:
-            return ProviderHealth(provider="ionet", status=HealthStatus.UNHEALTHY, error="Not connected")
+            return ProviderHealth(
+                provider="ionet", status=HealthStatus.UNHEALTHY, error="Not connected"
+            )
         try:
             start = time.monotonic()
             resp = await self._client.get("/health")
@@ -384,8 +388,8 @@ def _map_status(raw: str) -> Literal["pending", "active", "stopped", "failed"]:
 
 def _parse_ts(raw: str | None) -> datetime:
     if not raw:
-        return datetime.now(timezone.utc)
+        return datetime.now(UTC)
     try:
         return datetime.fromisoformat(raw.replace("Z", "+00:00"))
     except ValueError:
-        return datetime.now(timezone.utc)
+        return datetime.now(UTC)

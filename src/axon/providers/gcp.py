@@ -5,12 +5,13 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import tempfile
 import time
 import zipfile
-import tempfile
-from datetime import datetime, timezone
+from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from axon.exceptions import AuthError, DeploymentError, ProviderError
 from axon.pricing import get_pricing
@@ -190,7 +191,7 @@ class GCPProvider(IAxonProvider):
             name=config.name,
             provider="gcp",
             status="active" if service_url else "pending",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             endpoint=service_url or None,
             metadata={
                 "service": "run",
@@ -202,8 +203,8 @@ class GCPProvider(IAxonProvider):
 
     async def _deploy_functions(self, config: DeploymentConfig) -> Deployment:
         """Deploy a Python/Node.js function to Cloud Functions (2nd gen)."""
-        import httpx
         import google.auth.transport.requests
+        import httpx
 
         func_name = _sanitise_name(config.name)
         entry = Path(config.entry_point)
@@ -291,7 +292,7 @@ class GCPProvider(IAxonProvider):
                 name=config.name,
                 provider="gcp",
                 status="active" if invoke_url else "pending",
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
                 endpoint=invoke_url or None,
                 metadata={
                     "service": "functions",
@@ -312,8 +313,8 @@ class GCPProvider(IAxonProvider):
 
     async def send(self, processor_id: str, payload: Any) -> None:
         """POST payload to a Cloud Run service or Cloud Functions endpoint."""
-        import httpx
         import google.auth.transport.requests
+        import httpx
 
         endpoint = self._service_urls.get(processor_id)
         if not endpoint:
@@ -355,7 +356,8 @@ class GCPProvider(IAxonProvider):
     async def list_deployments(self) -> list[Deployment]:
         if not self._connected:
             raise ProviderError("gcp", "Not connected.")
-        import httpx, google.auth.transport.requests
+        import google.auth.transport.requests
+        import httpx
         assert self._credentials is not None
         creds = self._credentials
         request = google.auth.transport.requests.Request()
@@ -376,8 +378,12 @@ class GCPProvider(IAxonProvider):
                 id=svc.get("name", "").split("/")[-1],
                 name=svc.get("name", "").split("/")[-1],
                 provider="gcp",
-                status="active" if svc.get("conditions", [{}])[0].get("state") == "CONDITION_SUCCEEDED" else "pending",
-                created_at=datetime.now(timezone.utc),
+                status=(
+                    "active"
+                    if svc.get("conditions", [{}])[0].get("state") == "CONDITION_SUCCEEDED"
+                    else "pending"
+                ),
+                created_at=datetime.now(UTC),
                 endpoint=svc.get("uri"),
                 metadata={"service": "run", "region": self._region},
             )
@@ -434,7 +440,10 @@ class GCPProvider(IAxonProvider):
         vcpu = float(config.metadata.get("cpu", 1))
         mem_gb = config.memory_mb / 1024
         pricing = await get_pricing()
-        compute = (pricing.gcp_run_vcpu_sec * vcpu + pricing.gcp_run_gib_sec * mem_gb) * duration_s * config.replicas
+        compute = (
+            (pricing.gcp_run_vcpu_sec * vcpu + pricing.gcp_run_gib_sec * mem_gb)
+            * duration_s * config.replicas
+        )
         return CostEstimate(
             provider="gcp",
             token="USD",
@@ -453,7 +462,10 @@ _SECRET_SUFFIXES = ("_KEY", "_SECRET", "_TOKEN", "_PASSWORD", "_MNEMONIC", "_PRI
 
 
 def _filter_env(env: dict[str, str]) -> dict[str, str]:
-    return {k: v for k, v in env.items() if not any(k.upper().endswith(s) for s in _SECRET_SUFFIXES)}
+    return {
+        k: v for k, v in env.items()
+        if not any(k.upper().endswith(s) for s in _SECRET_SUFFIXES)
+    }
 
 
 def _sanitise_name(name: str) -> str:

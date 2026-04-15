@@ -2,15 +2,12 @@
 
 from __future__ import annotations
 
-import json
 import os
 import re
-import subprocess
-import tempfile
 import time
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Any, Callable
+from collections.abc import Callable
+from datetime import UTC, datetime
+from typing import Any
 
 import httpx
 
@@ -111,7 +108,9 @@ class FlyProvider(IAxonProvider):
             resp.raise_for_status()
         except httpx.HTTPStatusError as exc:
             if exc.response.status_code == 401:
-                raise AuthError("FLY_API_TOKEN is invalid or expired. Regenerate with: flyctl auth token") from exc
+                raise AuthError(
+                    "FLY_API_TOKEN is invalid or expired. Regenerate with: flyctl auth token"
+                ) from exc
             raise ProviderError("fly", f"Fly.io API error: {exc.response.status_code}") from exc
 
         self._connected = True
@@ -196,7 +195,7 @@ class FlyProvider(IAxonProvider):
             name=config.name,
             provider="fly",
             status="active" if machine_ids else "pending",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             endpoint=first_endpoint,
             metadata={
                 "app_name": self._app_name,
@@ -267,7 +266,7 @@ class FlyProvider(IAxonProvider):
                 status="active" if m.get("state") == "started" else "stopped",
                 created_at=datetime.fromisoformat(
                     m["created_at"].replace("Z", "+00:00")
-                ) if "created_at" in m else datetime.now(timezone.utc),
+                ) if "created_at" in m else datetime.now(UTC),
                 endpoint=self._machine_endpoints.get(m.get("id", "")),
                 metadata={
                     "app_name": self._app_name,
@@ -283,7 +282,10 @@ class FlyProvider(IAxonProvider):
         if not self._connected:
             return
         try:
-            headers = {"Authorization": f"Bearer {self._api_token}", "Content-Type": "application/json"}
+            headers = {
+                "Authorization": f"Bearer {self._api_token}",
+                "Content-Type": "application/json",
+            }
             async with httpx.AsyncClient(timeout=30.0) as client:
                 # Stop first (ignore errors — might already be stopped)
                 await client.post(
@@ -344,7 +346,10 @@ _SECRET_SUFFIXES = ("_KEY", "_SECRET", "_TOKEN", "_PASSWORD", "_MNEMONIC", "_PRI
 
 
 def _filter_env(env: dict[str, str]) -> dict[str, str]:
-    return {k: v for k, v in env.items() if not any(k.upper().endswith(s) for s in _SECRET_SUFFIXES)}
+    return {
+        k: v for k, v in env.items()
+        if not any(k.upper().endswith(s) for s in _SECRET_SUFFIXES)
+    }
 
 
 def _sanitise_name(name: str) -> str:

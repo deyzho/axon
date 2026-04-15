@@ -3,15 +3,15 @@
 from __future__ import annotations
 
 import asyncio
-import base64
 import json
 import os
 import re
 import subprocess
 import tempfile
-from datetime import datetime, timezone
+from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import httpx
 
@@ -177,7 +177,7 @@ class KoiiProvider(IAxonProvider):
                 name=config.name,
                 provider="koii",
                 status="active" if node_endpoints else "pending",
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
                 endpoint=node_endpoints[0] if node_endpoints else None,
                 metadata={
                     "task_id": task_id,
@@ -324,7 +324,7 @@ class KoiiProvider(IAxonProvider):
                     name=item.get("taskName", item.get("taskId", "")),
                     provider="koii",
                     status="active" if item.get("isRunning") else "stopped",
-                    created_at=datetime.now(timezone.utc),
+                    created_at=datetime.now(UTC),
                     endpoint=self._node_endpoints.get(item.get("taskId", "")),
                     metadata={"cid": item.get("cid", "")},
                 )
@@ -373,7 +373,10 @@ _SECRET_SUFFIXES = ("_KEY", "_SECRET", "_TOKEN", "_PASSWORD", "_MNEMONIC", "_PRI
 
 
 def _filter_env(env: dict[str, str]) -> dict[str, str]:
-    return {k: v for k, v in env.items() if not any(k.upper().endswith(s) for s in _SECRET_SUFFIXES)}
+    return {
+        k: v for k, v in env.items()
+        if not any(k.upper().endswith(s) for s in _SECRET_SUFFIXES)
+    }
 
 
 def _require_cli(name: str, docs_url: str) -> None:
@@ -401,7 +404,9 @@ def _decode_koii_key(key: str) -> bytes:
     try:
         return _b58decode(clean)
     except Exception as exc:
-        raise AuthError(f"Could not decode Koii private key (expected hex or base58): {exc}") from exc
+        raise AuthError(
+            f"Could not decode Koii private key (expected hex or base58): {exc}"
+        ) from exc
 
 
 def _b58decode(s: str) -> bytes:
@@ -439,7 +444,8 @@ def _parse_koii_output(output: str) -> tuple[str, list[str]]:
         pass
 
     # base58 task ID (32-44 chars, no 0/O/I/l)
-    b58_matches = re.findall(r"\b[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{32,44}\b", output)
+    b58_pattern = r"\b[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{32,44}\b"
+    b58_matches = re.findall(b58_pattern, output)
     if b58_matches:
         task_id = b58_matches[0]
 
