@@ -32,6 +32,23 @@ def create_inference_app(secret_key: str, **kwargs: Any) -> FastAPI:
     app = FastAPI(title="Axon Inference API", version="0.1.0")
     router = AxonInferenceRouter({"secret_key": secret_key, **kwargs})
 
+    @app.middleware("http")
+    async def check_auth(request: Request, call_next: Any) -> Any:
+        """Require a valid Bearer token on every request."""
+        auth = request.headers.get("Authorization", "")
+        if not auth.startswith("Bearer ") or auth[7:] != secret_key:
+            return JSONResponse(
+                {
+                    "error": {
+                        "message": "Invalid API key.",
+                        "type": "auth_error",
+                        "code": "invalid_api_key",
+                    }
+                },
+                status_code=401,
+            )
+        return await call_next(request)
+
     @app.get("/v1/models")
     async def list_models() -> JSONResponse:
         models = [
@@ -59,13 +76,16 @@ def create_inference_app(secret_key: str, **kwargs: Any) -> FastAPI:
         if not messages:
             raise HTTPException(status_code=400, detail="messages is required")
 
+        # Collect extra OpenAI-compatible params (temperature, max_tokens, etc.)
+        reserved = {"model", "messages", "stream"}
+        extra = {k: v for k, v in body.items() if k not in reserved}
+
         try:
             if stream:
-                # route() returns an AsyncGenerator when stream=True —
-                # wrap it in a StreamingResponse with SSE framing.
-                async_gen: AsyncGenerator[Any, None] = router.route(
-                    model=model, messages=messages, stream=True
-                )  # type: ignore[assignment]
+                # route() is async; awaiting it when stream=True returns an AsyncGenerator.
+                async_gen: AsyncGenerator[Any, None] = await router.route(
+                    model=model, messages=messages, stream=True, **extra
+                )
 
                 async def _sse_generator() -> AsyncGenerator[bytes, None]:
                     try:
@@ -86,7 +106,7 @@ def create_inference_app(secret_key: str, **kwargs: Any) -> FastAPI:
                 )
             else:
                 # route() returns a coroutine when stream=False — await it.
-                result = await router.route(model=model, messages=messages, stream=False)
+                result = await router.route(model=model, messages=messages, stream=False, **extra)
                 return JSONResponse(result)
 
         except Exception as exc:
