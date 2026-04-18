@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import re
@@ -58,6 +59,7 @@ class AkashProvider(IAxonProvider):
         self._chain_id: str = "akashnet-2"
         self._key_name: str = "axon"
         self._connected: bool = False
+        self._deployment_id: str | None = None
         # Maps dseq → lease endpoint
         self._endpoints: dict[str, str] = {}
         self._message_handlers: list[Callable[[Message], None]] = []
@@ -366,8 +368,36 @@ class AkashProvider(IAxonProvider):
         except (subprocess.CalledProcessError, json.JSONDecodeError):
             return []
 
-    async def teardown(self, deployment_id: str) -> None:
-        """No centralized teardown — deployment expires naturally on the network."""
+    async def teardown(self, deployment_id: str | None = None) -> None:
+        """Close the Akash deployment and stop billing."""
+        dseq = deployment_id or self._deployment_id
+        if not dseq:
+            return  # Nothing to tear down
+
+        wallet = self._config.get("wallet_address", "") if hasattr(self, "_config") else ""
+        node = self._node
+        chain_id = self._chain_id
+
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                "provider-services",
+                "tx", "deployment", "close",
+                "--dseq", str(dseq),
+                "--from", wallet,
+                "--node", node,
+                "--chain-id", chain_id,
+                "--yes",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            await proc.communicate()
+        except FileNotFoundError:
+            # provider-services CLI not installed — log and continue
+            pass
+        except Exception:  # noqa: BLE001
+            pass
+        finally:
+            self._deployment_id = None
 
     async def health(self) -> ProviderHealth:
         """Check Akash RPC node reachability."""

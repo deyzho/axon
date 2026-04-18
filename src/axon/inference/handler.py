@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import json
+import time
+from collections import defaultdict
 from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from typing import Any
 
 try:
@@ -17,6 +20,9 @@ except ImportError as exc:
 
 from axon.inference.router import AXON_MODELS, AxonInferenceRouter
 
+_rate_limit_store: dict[str, list[float]] = defaultdict(list)
+_RATE_LIMIT_RPM = 60  # requests per minute
+
 
 def create_inference_app(secret_key: str, **kwargs: Any) -> FastAPI:
     """
@@ -29,8 +35,14 @@ def create_inference_app(secret_key: str, **kwargs: Any) -> FastAPI:
         app = AxonInferenceHandler(secret_key="...").app
         uvicorn.run(app, host="0.0.0.0", port=8000)
     """
-    app = FastAPI(title="Axon Inference API", version="0.1.0")
     router = AxonInferenceRouter({"secret_key": secret_key, **kwargs})
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+        yield
+        await router.close()
+
+    app = FastAPI(title="Axon Inference API", version="0.1.0", lifespan=lifespan)
 
     @app.middleware("http")
     async def check_auth(request: Request, call_next: Any) -> Any:
@@ -47,6 +59,22 @@ def create_inference_app(secret_key: str, **kwargs: Any) -> FastAPI:
                 },
                 status_code=401,
             )
+        return await call_next(request)
+
+    @app.middleware("http")
+    async def rate_limit(request: Request, call_next: Any) -> Any:
+        key = request.headers.get("Authorization", "anonymous")
+        now = time.monotonic()
+        window_start = now - 60.0
+        timestamps = _rate_limit_store[key]
+        # Remove expired entries
+        _rate_limit_store[key] = [t for t in timestamps if t > window_start]
+        if len(_rate_limit_store[key]) >= _RATE_LIMIT_RPM:
+            return JSONResponse(
+                {"error": {"message": "Rate limit exceeded. Max 60 requests per minute.", "code": "rate_limit_exceeded"}},
+                status_code=429,
+            )
+        _rate_limit_store[key].append(now)
         return await call_next(request)
 
     @app.get("/v1/models")
@@ -111,10 +139,6 @@ def create_inference_app(secret_key: str, **kwargs: Any) -> FastAPI:
 
         except Exception as exc:
             raise HTTPException(status_code=502, detail=str(exc)) from exc
-
-    @app.on_event("shutdown")
-    async def shutdown() -> None:
-        await router.close()
 
     return app
 

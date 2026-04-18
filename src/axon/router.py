@@ -109,6 +109,7 @@ class AxonRouter:
         self._strategy = strategy
         self._health_check_interval = health_check_interval
         self._health_task: asyncio.Task[None] | None = None
+        self._rr_index: int = 0
 
     async def connect(self) -> None:
         """Connect to all configured providers concurrently."""
@@ -147,12 +148,9 @@ class AxonRouter:
             # Sort by estimated cost — requires last estimate cache (simplified)
             return available[0]
         elif self._strategy == RoutingStrategy.ROUND_ROBIN:
-            # Simple round-robin using index
-            available[0]
-            # Rotate by moving the first to the end
-            list(self._slots.keys())
-            available_names = [s.provider.name for s in available]
-            return available[available_names.index(available[0].provider.name)]
+            idx = self._rr_index % len(available)
+            self._rr_index += 1
+            return available[idx]
         else:  # FAILOVER
             return available[0]
 
