@@ -52,6 +52,14 @@ pip install "axonsdk-py[azure]"     # + azure-identity + azure-mgmt-containerins
 pip install "axonsdk-py[all]"       # everything
 ```
 
+> **Note:** Install as `axonsdk-py`, import as `axon`.
+>
+> ```python
+> from axon import AxonClient, AxonRouter
+> ```
+>
+> (The PyPI distribution name differs from the import name — same pattern as `beautifulsoup4` → `from bs4 import`.)
+
 > **Why `axonsdk-py` instead of `axonsdk`?** The `axon`, `axonpy`, and `axon-sdk` names on PyPI are held by unrelated projects, and `axonsdk` is blocked by PyPI's name-similarity rule. `axonsdk-py` mirrors the `axon-ts` repo naming convention (`-py` for Python, `-ts` for TypeScript) while the import path stays `import axon` unchanged.
 
 ---
@@ -322,12 +330,12 @@ Axon is the **Python** compute routing SDK. If you're building with **TypeScript
 
 | Package | Description |
 |---|---|
-| [`@phonixsdk/sdk`](https://github.com/deyzho/phonixsdk) | TypeScript SDK — same providers, same routing strategies |
-| [`@phonixsdk/mobile`](https://github.com/deyzho/phonixsdk) | React Native / Expo SDK for iOS & Android |
-| [`@phonixsdk/cli`](https://github.com/deyzho/phonixsdk) | CLI — `axon init`, `axon deploy`, `axon status` |
-| [`@phonixsdk/inference`](https://github.com/deyzho/phonixsdk) | OpenAI-compatible inference handler for Next.js |
+| [`@axonsdk/sdk`](https://github.com/deyzho/axon-ts) | TypeScript SDK — same providers, same routing strategies |
+| [`@axonsdk/mobile`](https://github.com/deyzho/axon-ts) | React Native / Expo SDK for iOS & Android |
+| [`@axonsdk/cli`](https://github.com/deyzho/axon-ts) | CLI — `axon init`, `axon deploy`, `axon status` |
+| [`@axonsdk/inference`](https://github.com/deyzho/axon-ts) | OpenAI-compatible inference handler for Next.js |
 
-**[phonixsdk.dev](https://phonixsdk.dev)** — full documentation for the TypeScript ecosystem.
+**[axonsdk.dev](https://axonsdk.dev)** — full documentation for the TypeScript ecosystem.
 
 ---
 

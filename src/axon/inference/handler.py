@@ -117,7 +117,7 @@ def create_inference_app(secret_key: str, **kwargs: Any) -> FastAPI:
             {
                 "id": model_id,
                 "object": "model",
-                "owned_by": "phonixsdk",
+                "owned_by": "axonsdk",
                 "description": info["description"],
                 "hardware": info["hardware"],
                 "provider": info["provider"],
