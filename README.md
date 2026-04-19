@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/deyzho/axon/actions/workflows/publish.yml/badge.svg)](https://github.com/deyzho/axon/actions/workflows/publish.yml)
 [![PyPI](https://img.shields.io/badge/PyPI-pending-orange)](https://github.com/pypi/support/issues)
-[![Python](https://img.shields.io/badge/python-3.11%20|%203.12%20|%203.13-blue)](https://pypi.org/project/axonsdk/)
+[![Python](https://img.shields.io/badge/python-3.11%20|%203.12%20|%203.13-blue)](https://pypi.org/project/axon-py/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](./LICENSE)
 
 **[axonsdk.dev](https://axonsdk.dev) · [GitHub](https://github.com/deyzho/axon)**
@@ -44,19 +44,15 @@ Axon is a universal AI compute routing layer. Stop rewriting integrations every 
 ## Install
 
 ```bash
-pip install axonsdk              # core SDK
-pip install axonsdk[inference]   # + FastAPI OpenAI-compatible server
-pip install axonsdk[aws]         # + boto3
-pip install axonsdk[gcp]         # + google-auth
-pip install axonsdk[azure]       # + azure-identity + azure-mgmt-containerinstance
-pip install axonsdk[all]         # everything
+pip install axon-py              # core SDK (mirrors the axon-ts npm packages)
+pip install "axon-py[inference]" # + FastAPI OpenAI-compatible server
+pip install "axon-py[aws]"       # + boto3
+pip install "axon-py[gcp]"       # + google-auth
+pip install "axon-py[azure]"     # + azure-identity + azure-mgmt-containerinstance
+pip install "axon-py[all]"       # everything
 ```
 
-> **PyPI publication pending.** The `axon` name on PyPI is currently held by an abandoned 2013 package. A PEP 541 name-reclamation request has been filed. Once approved, `pip install axonsdk` will work. In the meantime, install directly from source:
->
-> ```bash
-> pip install git+https://github.com/deyzho/axon.git
-> ```
+> **Why `axon-py` instead of `axonsdk`?** The `axon`, `axonpy`, and `axon-sdk` names on PyPI are held by unrelated projects, and `axonsdk` is blocked by PyPI's name-similarity rule. `axon-py` mirrors the `axon-ts` repo naming convention (`-py` for Python, `-ts` for TypeScript) while the import path stays `import axon` unchanged.
 
 ---
 
@@ -341,6 +337,6 @@ Apache-2.0 — see [LICENSE](./LICENSE).
 
 ---
 
-**[axonsdk.dev](https://axonsdk.dev)** · hello@axonsdk.dev · Apache-2.0
+**[axonsdk.dev](https://axonsdk.dev)** · deyzho@me.com · Apache-2.0
 
 *Axon is not affiliated with io.net, Akash Network, Acurast, Fluence, or Koii. Provider names and trademarks belong to their respective owners.*

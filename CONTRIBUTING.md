@@ -180,10 +180,10 @@ class MyProvider(IAxonProvider):
 
 ## Security
 
-Please **do not** open public GitHub issues for security vulnerabilities. Instead email **security@axonsdk.dev**. See [SECURITY.md](./SECURITY.md) for the full disclosure policy.
+Please **do not** open public GitHub issues for security vulnerabilities. Instead email **deyzho@me.com**. See [SECURITY.md](./SECURITY.md) for the full disclosure policy.
 
 ---
 
 ## Questions?
 
-Open a GitHub Discussion or email `hello@axonsdk.dev`.
+Open a GitHub Discussion or email `deyzho@me.com`.
