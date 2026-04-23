@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "axonsdk-py"
-version = "0.1.11"
+version = "0.1.12"
 description = "Provider-agnostic edge compute SDK for AI workload routing"
 readme = "README.md"
 license = { text = "Apache-2.0" }
@@ -55,7 +55,7 @@ azure = [
 cloudflare = []   # httpx is already a core dependency
 fly = []          # httpx is already a core dependency
 all = [
-    "axon[blockchain,inference,cli,aws,gcp,azure]",
+    "axonsdk-py[blockchain,inference,cli,aws,gcp,azure]",
 ]
 dev = [
     "pytest>=8",
