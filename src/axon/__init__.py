@@ -9,6 +9,9 @@ Quickstart:
     deployment = await client.deploy(config)
 """
 
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _pkg_version
+
 from axon.client import AxonClient
 from axon.exceptions import AxonError, ConfigError, ProviderError
 from axon.router import AxonRouter
@@ -23,7 +26,10 @@ from axon.types import (
 )
 from axon.utils.retry import with_retry
 
-__version__ = "0.1.6"
+try:
+    __version__ = _pkg_version("axonsdk-py")
+except PackageNotFoundError:
+    __version__ = "0.0.0+unknown"
 
 __all__ = [
     "AxonClient",

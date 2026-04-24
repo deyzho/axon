@@ -1,9 +1,50 @@
 # Changelog
 
-All notable changes to the Axon Python SDK are documented here.
+All notable changes to the AxonSDK Python package are documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+---
+
+## [0.1.12] — 2026-04-22
+
+### Fixed
+- **Packaging:** `[all]` optional-dependency extra self-referenced the wrong distribution name (`axon[...]` instead of `axonsdk-py[...]`). `pip install "axonsdk-py[all]"` now installs all optional extras correctly. Previously pip would attempt to resolve a separate `axon` package from PyPI.
+- **Version drift:** `axon.__version__` is now read dynamically from the installed package metadata via `importlib.metadata` instead of a hard-coded string, so it can no longer lag behind the `pyproject.toml` version. The 0.1.11 wheel on PyPI reported `__version__ = "0.1.6"` — consumers on 0.1.12+ get the correct version.
+
+### Added
+- **Typing:** `src/axon/py.typed` (PEP 561 marker) — downstream `mypy` and `pyright` now see the public API's type hints instead of falling back to `Any`.
+
+---
+
+## [0.1.11] — 2026-04-20
+
+### Changed
+- **Brand:** AxonSDK consistency pass across CLI `--help` banner, README, and Python landing page. "Axon" (bare) replaced with "AxonSDK" in user-facing copy to disambiguate from the unrelated company of that name.
+- **Landing:** Unified AxonSDK landing at `axonsdk.dev`; Python-specific landing moved to `py.axonsdk.dev`.
+
+### Fixed
+- **Stale brand references:** `@phonixsdk/*` package names replaced with `@axonsdk/*` throughout README cross-references.
+- **OpenAI-compatible endpoint:** removed stale `phonixsdk` `owned_by` value from `/v1/models` response payload.
+- **README install-vs-import:** clarified that the PyPI distribution is `axonsdk-py` while the import name remains `axon` (same pattern as `beautifulsoup4` → `from bs4 import`).
+
+---
+
+## [0.1.10] — 2026-04-19
+
+This is the first version actually published to PyPI. Versions 0.1.0 through 0.1.9 existed as git tags during pre-PyPI development but were never published to the registry.
+
+### Added
+- **PyPI Trusted Publishing:** OIDC-backed release pipeline — no long-lived tokens.
+- **Providers:** Implementation of `COST` routing strategy across all cloud backends.
+- **Security:** 30-day post-close remediation — SSRF protection hardening, LRU rate-limit store, CI hardening (ruff + mypy strict + pytest-cov).
+- **Inference:** Test suite added for the OpenAI-compatible handler; auth and parameter forwarding fixed.
+
+### Changed
+- **PyPI distribution name:** finalised as `axonsdk-py`. `axon`, `axonpy`, `axon-sdk`, and `axonsdk` all failed PyPI's similarity check against existing packages.
+- **README:** CI badge, correct PyPI install name, ecosystem section linking the companion TS monorepo.
+- **SECURITY.md:** updated contact and disclosure timeline.
 
 ---
 
@@ -38,10 +79,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - **Dependencies:** `eth-account` moved from core to optional `blockchain` extra — install with `pip install axonsdk-py[blockchain]` (required for Akash, Acurast, Fluence, Koii providers)
 - **CI:** `--ignore-missing-imports` flag removed from CI mypy invocation — now configured permanently in `[tool.mypy]`
 - **CI:** `mypy` now reads `ignore_missing_imports = true` from `pyproject.toml`
-- **Project URLs:** Fixed `project.urls` in `pyproject.toml` — `Repository` now correctly points to `deyzho/axon`
+- **Project URLs:** Fixed `project.urls` in `pyproject.toml` — `Repository` now correctly points to `deyzho/axonsdk`
 
 ### Fixed
-- `pyproject.toml` project URLs corrected from `deyzho/axonsdk` to `deyzho/axon`
+- `pyproject.toml` project URLs corrected from `deyzho/axonsdk` to `deyzho/axonsdk`
 
 ---
 
@@ -85,8 +126,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
-[0.1.7]: https://github.com/deyzho/axon/compare/v0.1.6...v0.1.7
-[0.1.6]: https://github.com/deyzho/axon/compare/v0.1.5...v0.1.6
-[0.1.5]: https://github.com/deyzho/axon/compare/v0.1.2...v0.1.5
-[0.1.2]: https://github.com/deyzho/axon/compare/v0.1.0...v0.1.2
-[0.1.0]: https://github.com/deyzho/axon/releases/tag/v0.1.0
+[0.1.7]: https://github.com/deyzho/axonsdk/compare/v0.1.6...v0.1.7
+[0.1.6]: https://github.com/deyzho/axonsdk/compare/v0.1.5...v0.1.6
+[0.1.5]: https://github.com/deyzho/axonsdk/compare/v0.1.2...v0.1.5
+[0.1.2]: https://github.com/deyzho/axonsdk/compare/v0.1.0...v0.1.2
+[0.1.0]: https://github.com/deyzho/axonsdk/releases/tag/v0.1.0
