@@ -2,7 +2,7 @@
 
 > **Current release:** `axonsdk-py` v0.1.12 — Feature-complete for 10 providers, multi-provider routing, OpenAI-compatible inference, and CLI.
 
-Priorities may shift based on community feedback and provider availability. This roadmap reflects the Python SDK ([`deyzho/axon`](https://github.com/deyzho/axon)). The TypeScript monorepo ([`deyzho/axon-ts`](https://github.com/deyzho/axon-ts)) has its own companion roadmap.
+Priorities may shift based on community feedback and provider availability. This roadmap reflects the Python SDK ([`deyzho/axonsdk`](https://github.com/deyzho/axonsdk)). The TypeScript monorepo ([`deyzho/axonsdk-ts`](https://github.com/deyzho/axonsdk-ts)) has its own companion roadmap.
 
 Dates are targets, not commitments. Each release ships when its acceptance criteria are met.
 

@@ -1,11 +1,11 @@
 # AxonSDK (Python)
 
-[![CI](https://github.com/deyzho/axon/actions/workflows/publish.yml/badge.svg)](https://github.com/deyzho/axon/actions/workflows/publish.yml)
+[![CI](https://github.com/deyzho/axonsdk/actions/workflows/publish.yml/badge.svg)](https://github.com/deyzho/axonsdk/actions/workflows/publish.yml)
 [![PyPI](https://img.shields.io/pypi/v/axonsdk-py?color=f97316)](https://pypi.org/project/axonsdk-py/)
 [![Python](https://img.shields.io/badge/python-3.11%20|%203.12%20|%203.13-blue)](https://pypi.org/project/axonsdk-py/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](./LICENSE)
 
-**[axonsdk.dev](https://axonsdk.dev) · [PyPI](https://pypi.org/project/axonsdk-py/) · [Roadmap](./ROADMAP.md) · [GitHub](https://github.com/deyzho/axon)**
+**[axonsdk.dev](https://axonsdk.dev) · [PyPI](https://pypi.org/project/axonsdk-py/) · [Roadmap](./ROADMAP.md) · [GitHub](https://github.com/deyzho/axonsdk)**
 
 **One SDK. Any compute. Route AI inference to the fastest, cheapest backend — cloud, edge, or your own infrastructure.**
 
@@ -44,7 +44,7 @@ AxonSDK is a universal AI compute routing layer. Stop rewriting integrations eve
 ## Install
 
 ```bash
-pip install axonsdk-py              # core SDK (mirrors the axon-ts npm packages)
+pip install axonsdk-py              # core SDK (mirrors the axonsdk-ts npm packages)
 pip install "axonsdk-py[inference]" # + FastAPI OpenAI-compatible server
 pip install "axonsdk-py[aws]"       # + boto3
 pip install "axonsdk-py[gcp]"       # + google-auth
@@ -60,7 +60,7 @@ pip install "axonsdk-py[all]"       # everything
 >
 > (The PyPI distribution name differs from the import name — same pattern as `beautifulsoup4` → `from bs4 import`.)
 
-> **Why `axonsdk-py` instead of `axonsdk`?** The `axon`, `axonpy`, and `axon-sdk` names on PyPI are held by unrelated projects, and `axonsdk` is blocked by PyPI's name-similarity rule. `axonsdk-py` mirrors the `axon-ts` repo naming convention (`-py` for Python, `-ts` for TypeScript) while the import path stays `import axon` unchanged.
+> **Why `axonsdk-py` instead of `axonsdk`?** The `axon`, `axonpy`, and `axon-sdk` names on PyPI are held by unrelated projects, and `axonsdk` is blocked by PyPI's name-similarity rule. `axonsdk-py` mirrors the `axonsdk-ts` repo naming convention (`-py` for Python, `-ts` for TypeScript) while the import path stays `import axon` unchanged.
 
 ---
 
@@ -304,7 +304,7 @@ axon/
 ## Development
 
 ```bash
-git clone https://github.com/deyzho/axon.git
+git clone https://github.com/deyzho/axonsdk.git
 cd axon
 pip install -e ".[all,dev]"
 pytest
@@ -330,10 +330,10 @@ This is the **Python** AxonSDK. If you're building with **TypeScript / Node.js**
 
 | Package | Description |
 |---|---|
-| [`@axonsdk/sdk`](https://github.com/deyzho/axon-ts) | TypeScript SDK — same providers, same routing strategies |
-| [`@axonsdk/mobile`](https://github.com/deyzho/axon-ts) | React Native / Expo SDK for iOS & Android |
-| [`@axonsdk/cli`](https://github.com/deyzho/axon-ts) | CLI — `axon init`, `axon deploy`, `axon status` |
-| [`@axonsdk/inference`](https://github.com/deyzho/axon-ts) | OpenAI-compatible inference handler for Next.js |
+| [`@axonsdk/sdk`](https://github.com/deyzho/axonsdk-ts) | TypeScript SDK — same providers, same routing strategies |
+| [`@axonsdk/mobile`](https://github.com/deyzho/axonsdk-ts) | React Native / Expo SDK for iOS & Android |
+| [`@axonsdk/cli`](https://github.com/deyzho/axonsdk-ts) | CLI — `axon init`, `axon deploy`, `axon status` |
+| [`@axonsdk/inference`](https://github.com/deyzho/axonsdk-ts) | OpenAI-compatible inference handler for Next.js |
 
 **[axonsdk.dev](https://axonsdk.dev)** — full documentation for the TypeScript ecosystem.
 

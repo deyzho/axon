@@ -71,9 +71,9 @@ axon = "axon.cli.main:app"
 
 [project.urls]
 Homepage = "https://axonsdk.dev"
-Documentation = "https://github.com/deyzho/axon#readme"
-Repository = "https://github.com/deyzho/axon"
-Issues = "https://github.com/deyzho/axon/issues"
+Documentation = "https://github.com/deyzho/axonsdk#readme"
+Repository = "https://github.com/deyzho/axonsdk"
+Issues = "https://github.com/deyzho/axonsdk/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/axon"]

@@ -79,10 +79,10 @@ This is the first version actually published to PyPI. Versions 0.1.0 through 0.1
 - **Dependencies:** `eth-account` moved from core to optional `blockchain` extra — install with `pip install axonsdk-py[blockchain]` (required for Akash, Acurast, Fluence, Koii providers)
 - **CI:** `--ignore-missing-imports` flag removed from CI mypy invocation — now configured permanently in `[tool.mypy]`
 - **CI:** `mypy` now reads `ignore_missing_imports = true` from `pyproject.toml`
-- **Project URLs:** Fixed `project.urls` in `pyproject.toml` — `Repository` now correctly points to `deyzho/axon`
+- **Project URLs:** Fixed `project.urls` in `pyproject.toml` — `Repository` now correctly points to `deyzho/axonsdk`
 
 ### Fixed
-- `pyproject.toml` project URLs corrected from `deyzho/axonsdk` to `deyzho/axon`
+- `pyproject.toml` project URLs corrected from `deyzho/axonsdk` to `deyzho/axonsdk`
 
 ---
 
@@ -126,8 +126,8 @@ This is the first version actually published to PyPI. Versions 0.1.0 through 0.1
 
 ---
 
-[0.1.7]: https://github.com/deyzho/axon/compare/v0.1.6...v0.1.7
-[0.1.6]: https://github.com/deyzho/axon/compare/v0.1.5...v0.1.6
-[0.1.5]: https://github.com/deyzho/axon/compare/v0.1.2...v0.1.5
-[0.1.2]: https://github.com/deyzho/axon/compare/v0.1.0...v0.1.2
-[0.1.0]: https://github.com/deyzho/axon/releases/tag/v0.1.0
+[0.1.7]: https://github.com/deyzho/axonsdk/compare/v0.1.6...v0.1.7
+[0.1.6]: https://github.com/deyzho/axonsdk/compare/v0.1.5...v0.1.6
+[0.1.5]: https://github.com/deyzho/axonsdk/compare/v0.1.2...v0.1.5
+[0.1.2]: https://github.com/deyzho/axonsdk/compare/v0.1.0...v0.1.2
+[0.1.0]: https://github.com/deyzho/axonsdk/releases/tag/v0.1.0
